@@ -52,6 +52,10 @@ export function createApp(db: DB, opts: { auth?: AuthConfig; webDist?: string } 
       player: z.uuid().optional(),
       limit: z.coerce.number().int().min(1).max(100).default(20),
       before: z.iso.datetime({ offset: true }).optional(),
+      minDurationMs: z.coerce.number().int().min(0).optional(),
+      maxDurationMs: z.coerce.number().int().min(0).optional(),
+      minPlayers: z.coerce.number().int().min(0).optional(),
+      maxPlayers: z.coerce.number().int().min(0).optional(),
     }), invalid),
     async c => c.json(await listMatches(db, c.req.valid("query"))));
 

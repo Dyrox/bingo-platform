@@ -49,8 +49,11 @@ async function get<T>(path: string): Promise<T> {
   return res.json();
 }
 
-export function listMatches(opts: { player?: string; before?: string; limit?: number } = {}) {
+export interface MatchFilter { minDurationMs?: number; maxDurationMs?: number; minPlayers?: number; maxPlayers?: number }
+
+export function listMatches(opts: { player?: string; before?: string; limit?: number } & MatchFilter = {}) {
   const q = new URLSearchParams();
+  for (const k of ['minDurationMs', 'maxDurationMs', 'minPlayers', 'maxPlayers'] as const) if (opts[k] !== undefined) q.set(k, String(opts[k]));
   if (opts.player) q.set('player', opts.player);
   if (opts.before) q.set('before', opts.before);
   q.set('limit', String(opts.limit ?? 20));
@@ -92,7 +95,7 @@ export const getPlayer = (uuid: string) => get<PlayerProfile>(`/api/players/${en
 export const listPlayers = () => get<{ players: PlayerListing[] }>('/api/players').then(r => r.players);
 
 export interface Account {
-  user: { id: string; name: string; avatarUrl: string | null } | null;
+  user: { id: string; name: string; avatarUrl: string | null; admin?: boolean } | null;
   discord: boolean;
   players?: Player[];
   keys?: { id: string; name: string; prefix: string; createdAt: string; lastUsedAt: string | null }[];
@@ -127,4 +130,5 @@ export async function importYab(file: File, logs: File[] = []): Promise<ImportRe
 export const getMatchAccess = (id: string) => get<{ canManage: boolean }>(`/api/matches/${encodeURIComponent(id)}/access`);
 export const setMatchExcluded = (id: string, excluded: boolean) => send<{ ok: true }>('PATCH', `/api/matches/${encodeURIComponent(id)}`, { excluded });
 export const deleteMatch = (id: string) => send<{ ok: true }>('DELETE', `/api/matches/${encodeURIComponent(id)}`);
+export const bulkMatches = (ids: string[], action: 'exclude' | 'include' | 'delete') => send<{ done: number; skipped: number }>('POST', '/api/matches/bulk', { ids, action });
 export const revokeUploadKey = (id: string) => send<{ ok: true }>('DELETE', `/api/me/keys/${id}`);

@@ -1,9 +1,11 @@
+/* Minecraft.otf has one weight; a weight range stops browsers from faking bold on the pixels */
+@font-face { font-family: "Minecraft"; src: url("/fonts/Minecraft.otf") format("opentype"); font-weight: 100 900; font-display: swap }
 /* Same palette and type as the tier guide, so the two read as one site. */
 :root {
   --bg: #eef0ea; --panel: #f9faf6; --fg: #1d221c; --muted: #5f675c; --line: #d4d8cd; --chip: #e2e6dc;
   --accent: #3e9a3a; --win: #d39a00;
   --tS: #d6334a; --tA: #e0751c; --tB: #c49a00; --tC: #3e9a3a; --tD: #2f72c4;
-  --display: "Pixelify Sans", "Noto Sans SC", system-ui, sans-serif;
+  --display: "Minecraft", "Noto Sans SC", system-ui, sans-serif;
   --body: "Noto Sans SC", system-ui, -apple-system, sans-serif;
   color-scheme: light;
 }
@@ -368,4 +370,22 @@ h1 .src-tag { font-family: var(--body); font-size: 13px; vertical-align: 6px; ma
   .top-inner nav { order: 3; flex-basis: 100%; overflow-x: auto }
   .top-inner .seg { margin-left: auto }
   .brand img { height: 34px }
+}
+
+/* match list: filters + multi-select */
+.match-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin: -4px 0 14px }
+.match-filters label { display: flex; align-items: center; gap: 6px; color: var(--muted) }
+.match-filters input { width: 64px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--fg); font: inherit }
+.select-toggle { margin-left: auto }
+.select-toggle.on { border-color: var(--fg) }
+.bulk-bar { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 10px 12px; margin-bottom: 10px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px }
+.bulk-actions { display: flex; gap: 8px; flex-wrap: wrap }
+.match-row.selectable { cursor: pointer; grid-template-columns: 20px 170px 1fr; user-select: none }
+.match-row.selected { border-color: var(--fg); background: color-mix(in srgb, var(--fg) 6%, var(--panel)) }
+.row-check { pointer-events: none; margin: 0 }
+@media (max-width: 640px) {
+  .match-row.selectable { grid-template-columns: 20px 1fr }
+  .match-row.selectable .match-teams { grid-column: 2 }
+  .select-toggle { margin-left: 0 }
 }

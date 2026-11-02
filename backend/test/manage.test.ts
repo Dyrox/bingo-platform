@@ -78,3 +78,34 @@ describe("managing a match", () => {
     expect((await call("DELETE", "uploader")).status).toBe(404);
   });
 });
+
+describe("the match list's filters and bulk actions", () => {
+  const ids = (q: string) => json(`/api/matches?${q}`).then(r => r.matches.map((m: any) => m.id));
+  const bulk = async (who: string, action: string, list = [matchId]) => (await app.request("/api/matches/bulk", {
+    method: "POST", headers: { cookie: cookies[who], "content-type": "application/json" }, body: JSON.stringify({ ids: list, action }),
+  })).json();
+
+  it("filters by duration and player count", async () => {
+    const m = await json(`/api/matches/${matchId}`);
+    const n = m.teams.reduce((s: number, t: any) => s + t.players.length, 0);
+    expect(await ids(`maxDurationMs=${m.durationMs}&minPlayers=${n}`)).toEqual([matchId]);
+    expect(await ids(`minDurationMs=${m.durationMs + 1}`)).toEqual([]);
+    expect(await ids(`maxPlayers=${n - 1}`)).toEqual([]);
+  });
+
+  it("acts only on matches the user may manage", async () => {
+    expect(await bulk("stranger", "exclude")).toEqual({ done: 0, skipped: 1 });
+    expect((await json(`/api/matches/${matchId}`)).excluded).toBe(false);
+    expect(await bulk("uploader", "exclude")).toEqual({ done: 1, skipped: 0 });
+    expect((await json(`/api/matches/${matchId}`)).excluded).toBe(true);
+    expect(await bulk("admin", "include")).toEqual({ done: 1, skipped: 0 });
+    expect((await json(`/api/matches/${matchId}`)).excluded).toBe(false);
+    expect(await bulk("admin", "delete", [matchId, "00000000-0000-4000-8000-000000000000"])).toEqual({ done: 1, skipped: 1 });
+    expect((await app.request(`/api/matches/${matchId}`)).status).toBe(404);
+  });
+
+  it("tells the site who is an admin", async () => {
+    const me = async (who: string) => (await (await app.request("/api/me", { headers: { cookie: cookies[who] } })).json()).user.admin;
+    expect([await me("admin"), await me("uploader")]).toEqual([true, false]);
+  });
+});

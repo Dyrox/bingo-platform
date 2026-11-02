@@ -1,5 +1,5 @@
 import { createHash, randomBytes, randomInt } from "node:crypto";
-import { and, eq, gt, isNull, ne, or } from "drizzle-orm";
+import { and, eq, gt, inArray, isNull, ne, or } from "drizzle-orm";
 import type { Context, Hono } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { z } from "zod";
@@ -117,6 +117,7 @@ export function registerAuthRoutes(app: Hono<any>, db: DB, cfg: AuthConfig) {
   });
 
   /** Logged out: { user: null }. Logged in: the account, its Minecraft players and upload keys. */
+  const admins = new Set(cfg.adminDiscordIds ?? []);
   app.get("/api/me", async c => {
     const user = await currentUser(db, c);
     if (!user) return c.json({ user: null, discord: configured });
@@ -125,7 +126,8 @@ export function registerAuthRoutes(app: Hono<any>, db: DB, cfg: AuthConfig) {
       db.select({ id: uploadKeys.id, name: uploadKeys.name, prefix: uploadKeys.prefix, createdAt: uploadKeys.createdAt, lastUsedAt: uploadKeys.lastUsedAt })
         .from(uploadKeys).where(and(eq(uploadKeys.userId, user.id), isNull(uploadKeys.revokedAt))).orderBy(uploadKeys.createdAt),
     ]);
-    return c.json({ user: { id: user.id, name: user.name, avatarUrl: user.avatarUrl }, players: mine, keys, discord: configured });
+    const admin = !!user.discordId && admins.has(user.discordId);
+    return c.json({ user: { id: user.id, name: user.name, avatarUrl: user.avatarUrl, admin }, players: mine, keys, discord: configured });
   });
 
   // everything below needs a logged-in user
@@ -162,7 +164,6 @@ export function registerAuthRoutes(app: Hono<any>, db: DB, cfg: AuthConfig) {
   }));
 
   // Managing a match: whoever uploaded (or imported) it, and admins.
-  const admins = new Set(cfg.adminDiscordIds ?? []);
   const manageable = async (c: Context) => {
     const id = z.uuid().safeParse(c.req.param("id"));
     if (!id.success) return { error: c.json({ error: "not_found" }, 404) };
@@ -188,6 +189,22 @@ export function registerAuthRoutes(app: Hono<any>, db: DB, cfg: AuthConfig) {
     await db.update(matches).set({ excluded: body.data.excluded }).where(eq(matches.id, r.id));
     return c.json({ ok: true, excluded: body.data.excluded });
   });
+
+  // Many at once (the match list's selection). Matches the user may not manage are skipped and counted.
+  app.post("/api/matches/bulk", c => withUser(c, async user => {
+    const body = z.object({ ids: z.array(z.uuid()).min(1).max(500), action: z.enum(["exclude", "include", "delete"]) })
+      .safeParse(await c.req.json().catch(() => ({})));
+    if (!body.success) return c.json({ error: "invalid_request", issues: body.error.issues }, 400);
+    const admin = !!user.discordId && admins.has(user.discordId);
+    const found = await db.select({ id: matches.id }).from(matches)
+      .where(and(inArray(matches.id, body.data.ids), admin ? undefined : eq(matches.uploaderId, user.id)));
+    const ids = found.map(m => m.id);
+    if (ids.length) {
+      if (body.data.action === "delete") await db.delete(matches).where(inArray(matches.id, ids));
+      else await db.update(matches).set({ excluded: body.data.action === "exclude" }).where(inArray(matches.id, ids));
+    }
+    return c.json({ done: ids.length, skipped: body.data.ids.length - ids.length });
+  }));
 
   // teams, players, cards and timeline go with it (ON DELETE CASCADE)
   app.delete("/api/matches/:id", async c => {

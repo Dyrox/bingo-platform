@@ -85,6 +85,14 @@ const strings = {
       title: '管理这局', exclude: '不计入统计', excludeHint: '对局照样能看，但不算进胜负、时长、排行榜、对手记录和目标统计。',
       delete: '删除这局', confirm: '确定删除这局吗？棋盘、时间轴都会一起删除，不能恢复。', who: '只有上传这局的人和管理员能看到这里。',
     },
+    filter: {
+      duration: '时长', players: '人数', minutes: '分钟', min: '最少', max: '最多', clear: '清除筛选',
+      select: '多选', done: '完成', selected: (n: number) => `已选 ${n} 局`, all: '全选已加载', none: '取消选择',
+      exclude: '不计入统计', include: '恢复计入', delete: '删除',
+      confirm: (n: number) => `确定删除这 ${n} 局吗？棋盘、时间轴都会一起删除，不能恢复。`,
+      result: (done: number, skipped: number) => `已处理 ${done} 局` + (skipped ? `，${skipped} 局不是你上传的，已跳过` : ''),
+      hint: '按住 Shift 点击可以连选。',
+    },
     pickMatch: '选一局查看详情', openFull: '打开完整页面', vsLabel: '对手',
     guide: {
       nav: '难度图鉴', title: 'Bingo 难度图鉴',
@@ -186,6 +194,14 @@ const strings = {
     manage: {
       title: 'Manage this round', exclude: 'Doesn’t count', excludeHint: 'Still visible, but left out of records, playtime, the leaderboard, opponents and goal stats.',
       delete: 'Delete this round', confirm: 'Delete this round? Its card and timeline go too, and it can’t be undone.', who: 'Only the uploader and admins see this.',
+    },
+    filter: {
+      duration: 'Length', players: 'Players', minutes: 'min', min: 'from', max: 'to', clear: 'Clear filters',
+      select: 'Select', done: 'Done', selected: (n: number) => `${n} selected`, all: 'Select all loaded', none: 'Clear selection',
+      exclude: 'Doesn’t count', include: 'Count again', delete: 'Delete',
+      confirm: (n: number) => `Delete these ${n} rounds? Their cards and timelines go too, and it can’t be undone.`,
+      result: (done: number, skipped: number) => `Updated ${done}` + (skipped ? `; skipped ${skipped} you didn’t upload` : ''),
+      hint: 'Shift-click to select a range.',
     },
     pickMatch: 'Pick a match to see it here', openFull: 'Open full page', vsLabel: 'vs',
     guide: {

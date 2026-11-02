@@ -1,4 +1,4 @@
-import { and, desc, eq, exists, inArray, lt, sql } from "drizzle-orm";
+import { and, desc, eq, exists, gte, inArray, lt, lte, sql } from "drizzle-orm";
 import type { DB } from "./db/client.ts";
 import { boardCells, boards, matches, matchEvents, matchPlayers, matchTeams, players, uploadKeys, users } from "./db/schema.ts";
 import type { MatchUpload } from "./payload.ts";
@@ -91,8 +91,15 @@ const summary = (m: typeof matches.$inferSelect & { uploader: string }) => ({
 });
 
 /** Newest first. `before` is the endedAt of the last match on the previous page. */
-export async function listMatches(db: DB, q: { player?: string; limit: number; before?: string }) {
+export interface MatchFilter { minDurationMs?: number; maxDurationMs?: number; minPlayers?: number; maxPlayers?: number }
+
+export async function listMatches(db: DB, q: { player?: string; limit: number; before?: string } & MatchFilter) {
+  const playerCount = sql<number>`(select count(*) from ${matchPlayers} where ${matchPlayers.matchId} = ${matches.id})`;
   const where = and(
+    q.minDurationMs !== undefined ? gte(matches.durationMs, q.minDurationMs) : undefined,
+    q.maxDurationMs !== undefined ? lte(matches.durationMs, q.maxDurationMs) : undefined,
+    q.minPlayers !== undefined ? gte(playerCount, q.minPlayers) : undefined,
+    q.maxPlayers !== undefined ? lte(playerCount, q.maxPlayers) : undefined,
     q.player ? exists(db.select().from(matchPlayers).where(and(eq(matchPlayers.matchId, matches.id), eq(matchPlayers.playerUuid, q.player)))) : undefined,
     q.before ? lt(matches.endedAt, new Date(q.before)) : undefined,
   );
