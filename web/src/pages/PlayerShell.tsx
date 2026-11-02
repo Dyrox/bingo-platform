@@ -5,6 +5,7 @@ import { Status } from '../components/Layout';
 import { avatarUrl, formatDate } from '../format';
 import { useLang } from '../i18n';
 import { useAccount } from '../account';
+import { useMatchesVersion } from '../changes';
 
 /** Player header + 主页 / 记录 tabs; the tab pages read the profile through the outlet context. */
 export function PlayerShell() {
@@ -14,13 +15,15 @@ export function PlayerShell() {
   const [profile, setProfile] = useState<PlayerProfile | null>(null);
   const [error, setError] = useState<'missing' | 'failed' | null>(null);
 
+  const version = useMatchesVersion();
+  useEffect(() => { setProfile(null); setError(null); }, [uuid]);
   useEffect(() => {
     let live = true;
-    setProfile(null); setError(null);
+    // after a match changed, refresh in place rather than flashing "loading"
     getPlayer(uuid!).then(p => live && setProfile(p))
       .catch(e => live && setError(e instanceof NotFound ? 'missing' : 'failed'));
     return () => { live = false; };
-  }, [uuid]);
+  }, [uuid, version]);
 
   if (error) return <Status>{error === 'missing' ? t.notFound : t.error}</Status>;
   if (!profile) return <Status>{t.loading}</Status>;

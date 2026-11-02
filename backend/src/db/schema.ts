@@ -63,6 +63,8 @@ export const matches = pgTable("matches", {
   source: text("source").notNull().default("reporter"),
   // an import that only knows some of the players: a client's bingo.db records just its own team
   partial: boolean("partial").notNull().default(false),
+  // still listed and viewable, but left out of every statistic (records, leaderboard, goal stats)
+  excluded: boolean("excluded").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, t => [index("matches_ended_at_idx").on(t.endedAt)]);
 

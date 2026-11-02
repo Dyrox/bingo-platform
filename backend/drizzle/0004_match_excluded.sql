@@ -1,0 +1,1 @@
+ALTER TABLE "matches" ADD COLUMN "excluded" boolean DEFAULT false NOT NULL;

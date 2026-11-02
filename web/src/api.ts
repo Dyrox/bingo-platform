@@ -17,6 +17,8 @@ export interface MatchSummary {
   source: 'reporter' | 'yab-stats';
   /** an import that only knows some of the players (a client's bingo.db has just its own team) */
   partial: boolean;
+  /** "doesn't count": still listed, left out of every statistic */
+  excluded: boolean;
   teams: Team[];
 }
 
@@ -120,4 +122,7 @@ export async function importYab(file: File): Promise<ImportResult> {
   if (!res.ok) throw new Error(body.error ?? `${res.status}`);
   return body;
 }
+export const getMatchAccess = (id: string) => get<{ canManage: boolean }>(`/api/matches/${encodeURIComponent(id)}/access`);
+export const setMatchExcluded = (id: string, excluded: boolean) => send<{ ok: true }>('PATCH', `/api/matches/${encodeURIComponent(id)}`, { excluded });
+export const deleteMatch = (id: string) => send<{ ok: true }>('DELETE', `/api/matches/${encodeURIComponent(id)}`);
 export const revokeUploadKey = (id: string) => send<{ ok: true }>('DELETE', `/api/me/keys/${id}`);

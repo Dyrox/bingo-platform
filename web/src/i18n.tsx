@@ -77,6 +77,11 @@ const strings = {
         `文件里有 ${r.found} 局：新导入 ${r.imported} 局` + (r.replaced ? `，补全 ${r.replaced} 局` : '') + (r.skipped ? `，已存在跳过 ${r.skipped} 局` : '') + (r.partial ? `（其中 ${r.partial} 局只有部分玩家）` : '') + '。',
       errors: { not_sqlite: '这不是 SQLite 文件。', not_yab: '这个文件里没有 YAB 的对局表，是不是选错文件了？', file_too_large: '文件太大了（上限 50 MB）。', no_file: '没有选文件。', not_logged_in: '请先登录。' } as Record<string, string>,
     },
+    excludedTag: '不计入统计',
+    manage: {
+      title: '管理这局', exclude: '不计入统计', excludeHint: '对局照样能看，但不算进胜负、时长、排行榜、对手记录和目标统计。',
+      delete: '删除这局', confirm: '确定删除这局吗？棋盘、时间轴都会一起删除，不能恢复。', who: '只有上传这局的人和管理员能看到这里。',
+    },
     pickMatch: '选一局查看详情', openFull: '打开完整页面', vsLabel: '对手',
     guide: {
       nav: '难度图鉴', title: 'Bingo 难度图鉴',
@@ -170,6 +175,11 @@ const strings = {
       result: (r: { found: number; imported: number; replaced: number; skipped: number; partial: number }) =>
         `${r.found} rounds in the file: ${r.imported} imported` + (r.replaced ? `, ${r.replaced} completed` : '') + (r.skipped ? `, ${r.skipped} already here` : '') + (r.partial ? ` (${r.partial} with only some players)` : '') + '.',
       errors: { not_sqlite: 'That isn’t an SQLite file.', not_yab: 'That file has no YAB match tables. Wrong file?', file_too_large: 'File too large (50 MB max).', no_file: 'No file chosen.', not_logged_in: 'Log in first.' } as Record<string, string>,
+    },
+    excludedTag: 'Doesn’t count',
+    manage: {
+      title: 'Manage this round', exclude: 'Doesn’t count', excludeHint: 'Still visible, but left out of records, playtime, the leaderboard, opponents and goal stats.',
+      delete: 'Delete this round', confirm: 'Delete this round? Its card and timeline go too, and it can’t be undone.', who: 'Only the uploader and admins see this.',
     },
     pickMatch: 'Pick a match to see it here', openFull: 'Open full page', vsLabel: 'vs',
     guide: {

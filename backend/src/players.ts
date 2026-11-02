@@ -5,7 +5,7 @@ import { goalStats } from "./stats.ts";
 
 export type Result = "win" | "loss" | "draw";
 
-/** Everyone who has played, most recently active first. */
+/** Everyone who has played (in rounds that count), most recently active first. */
 export async function listPlayers(db: DB) {
   const rows = await db.select({
     uuid: players.uuid,
@@ -15,6 +15,7 @@ export async function listPlayers(db: DB) {
   }).from(players)
     .innerJoin(matchPlayers, eq(matchPlayers.playerUuid, players.uuid))
     .innerJoin(matches, eq(matches.id, matchPlayers.matchId))
+    .where(eq(matches.excluded, false))
     .groupBy(players.uuid, players.name)
     .orderBy(desc(sql`max(${matches.endedAt})`));
   return rows.map(r => ({ ...r, lastPlayed: new Date(r.lastPlayed).toISOString() }));
@@ -26,7 +27,8 @@ export async function listPlayers(db: DB) {
  * (a solo round that was ended early counts as a draw too).
  */
 export async function rounds(db: DB, filter: { player?: string; since?: Date } = {}) {
-  const where: SQL[] = [];
+  // rounds marked "doesn't count" are left out of every statistic
+  const where: SQL[] = [eq(matches.excluded, false)];
   if (filter.player) where.push(eq(matchPlayers.playerUuid, filter.player));
   if (filter.since) where.push(gte(matches.endedAt, filter.since));
   const rows = await db.select({
@@ -46,7 +48,7 @@ export async function rounds(db: DB, filter: { player?: string; since?: Date } =
     .innerJoin(matches, eq(matches.id, matchPlayers.matchId))
     .innerJoin(players, eq(players.uuid, matchPlayers.playerUuid))
     .innerJoin(matchTeams, and(eq(matchTeams.matchId, matchPlayers.matchId), eq(matchTeams.teamId, matchPlayers.teamId)))
-    .where(where.length ? and(...where) : undefined)
+    .where(and(...where))
     .orderBy(matches.endedAt, matches.id);
 
   return rows.map(r => ({

@@ -6,6 +6,7 @@ import { formatDuration } from '../format';
 import { plural, useLang } from '../i18n';
 import { teamColor, teamName } from '../teams';
 import { MatchView } from './MatchDetail';
+import { useMatchesVersion } from '../changes';
 import { useProfile } from './PlayerShell';
 
 /** 记录 tab: the player's matches by day on the left, the picked one on the right (stacked on phones). */
@@ -18,13 +19,14 @@ export function Records() {
   const [next, setNext] = useState<string | null>(null);
   const [error, setError] = useState(false);
 
+  const version = useMatchesVersion();
   useEffect(() => {
     let live = true;
-    setMatches(null);
     listMatches({ player: p.uuid, limit: 50 }).then(r => { if (live) { setMatches(r.matches); setNext(r.next); } })
       .catch(() => live && setError(true));
     return () => { live = false; };
-  }, [p.uuid]);
+  }, [p.uuid, version]);
+  useEffect(() => { setMatches(null); }, [p.uuid]);
 
   const more = async () => {
     const r = await listMatches({ player: p.uuid, before: next!, limit: 50 });
@@ -62,10 +64,13 @@ export function Records() {
               const result: Result = resultOf.get(m.id) ?? 'draw';
               return (
                 <button key={m.id} className={'record' + (m.id === matchId ? ' active' : '')} onClick={() => open(m.id)}>
-                  <span className={`result ${result}`}>{t.result[result]}</span>
+                  {m.excluded
+                    ? <span className="result draw" title={t.excludedTag}>–</span>
+                    : <span className={`result ${result}`}>{t.result[result]}</span>}
                   <span className="record-main">
                     <span className="record-team">
                       {m.source === 'yab-stats' && <span className="src-tag" title={t.importedTip}>{t.imported}</span>}
+                      {m.excluded && <span className="src-tag excluded">{t.excludedTag}</span>}
                       {mine && <span className="dot" style={{ background: teamColor(mine.id) }} />}
                       {mine ? teamName(mine.id, lang) : ''}
                       {rivals.length > 0 && <span className="muted"> {t.vsLabel} {rivals.map(r => r.players.map(pl => pl.name).join(', ') || teamName(r.id, lang)).join(' · ')}</span>}

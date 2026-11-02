@@ -338,6 +338,13 @@ nav a.active, nav a:hover { color: var(--fg); background: var(--chip) }
 .file-pick.busy { opacity: .6 }
 .import-ok { color: var(--accent); font-weight: 600 }
 
+.src-tag.excluded { background: color-mix(in srgb, var(--tS) 14%, transparent); color: var(--tS) }
+h1 .src-tag { font-family: var(--body); font-size: 13px; vertical-align: 6px; margin-left: 10px }
+.panel.manage { margin-bottom: 40px; display: flex; flex-direction: column; align-items: flex-start; gap: 10px }
+.panel.manage h2 { margin: 0 }
+.manage-row { display: flex; gap: 8px; align-items: baseline; cursor: pointer }
+.panel.manage p { margin: 0 }
+
 /* player picker */
 .player-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; margin: 16px 0 40px }
 .player-tile { display: flex; align-items: center; gap: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; text-decoration: none }

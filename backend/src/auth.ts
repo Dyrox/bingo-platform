@@ -4,7 +4,7 @@ import type { Context, Hono } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { z } from "zod";
 import type { DB } from "./db/client.ts";
-import { linkCodes, players, sessions, uploadKeys, users } from "./db/schema.ts";
+import { linkCodes, matches, players, sessions, uploadKeys, users } from "./db/schema.ts";
 import { createKeyForUser, findKey } from "./keys.ts";
 import { importYabGames, readYabStats } from "./import-yab.ts";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -18,12 +18,15 @@ export interface AuthConfig {
   publicUrl: string;
   /** Swappable for tests; talks to discord.com otherwise. */
   fetch?: typeof fetch;
+  /** Discord user ids that may manage (delete, exclude) any match, not just their own uploads. */
+  adminDiscordIds?: string[];
 }
 
 export const authConfigFromEnv = (): AuthConfig => ({
   discordClientId: process.env.DISCORD_CLIENT_ID,
   discordClientSecret: process.env.DISCORD_CLIENT_SECRET,
   publicUrl: (process.env.PUBLIC_URL ?? "http://localhost:5173").replace(/\/$/, ""),
+  adminDiscordIds: (process.env.ADMIN_DISCORD_IDS ?? "").split(",").map(s => s.trim()).filter(Boolean),
 });
 
 const SESSION_COOKIE = "bingo_session";
@@ -156,6 +159,42 @@ export function registerAuthRoutes(app: Hono<any>, db: DB, cfg: AuthConfig) {
     await db.update(uploadKeys).set({ revokedAt: new Date() }).where(and(eq(uploadKeys.id, id.data), eq(uploadKeys.userId, user.id)));
     return c.json({ ok: true });
   }));
+
+  // Managing a match: whoever uploaded (or imported) it, and admins.
+  const admins = new Set(cfg.adminDiscordIds ?? []);
+  const manageable = async (c: Context) => {
+    const id = z.uuid().safeParse(c.req.param("id"));
+    if (!id.success) return { error: c.json({ error: "not_found" }, 404) };
+    const user = await currentUser(db, c);
+    if (!user) return { error: c.json({ error: "not_logged_in" }, 401) };
+    const [m] = await db.select({ uploaderId: matches.uploaderId }).from(matches).where(eq(matches.id, id.data));
+    if (!m) return { error: c.json({ error: "not_found" }, 404) };
+    if (m.uploaderId !== user.id && !(user.discordId && admins.has(user.discordId))) return { error: c.json({ error: "forbidden" }, 403) };
+    return { id: id.data };
+  };
+
+  app.get("/api/matches/:id/access", async c => {
+    const r = await manageable(c);
+    return c.json({ canManage: !("error" in r) });
+  });
+
+  // "doesn't count": keep the round visible but out of every statistic
+  app.patch("/api/matches/:id", async c => {
+    const r = await manageable(c);
+    if ("error" in r) return r.error!;
+    const body = z.object({ excluded: z.boolean() }).safeParse(await c.req.json().catch(() => ({})));
+    if (!body.success) return c.json({ error: "invalid_request", issues: body.error.issues }, 400);
+    await db.update(matches).set({ excluded: body.data.excluded }).where(eq(matches.id, r.id));
+    return c.json({ ok: true, excluded: body.data.excluded });
+  });
+
+  // teams, players, cards and timeline go with it (ON DELETE CASCADE)
+  app.delete("/api/matches/:id", async c => {
+    const r = await manageable(c);
+    if ("error" in r) return r.error!;
+    await db.delete(matches).where(eq(matches.id, r.id));
+    return c.json({ ok: true });
+  });
 
   /**
    * Import YAB's own history: the bingo.db file from config/yet-another-minecraft-bingo/, sent as the

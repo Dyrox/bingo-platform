@@ -87,6 +87,7 @@ const summary = (m: typeof matches.$inferSelect & { uploader: string }) => ({
   uploader: m.uploader,
   source: m.source,
   partial: m.partial,
+  excluded: m.excluded,
 });
 
 /** Newest first. `before` is the endedAt of the last match on the previous page. */

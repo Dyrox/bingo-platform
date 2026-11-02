@@ -12,7 +12,7 @@ export function MatchRow({ m, highlight }: { m: MatchSummary; highlight?: string
   return (
     <Link to={`/matches/${m.id}`} className={'match-row' + (result ? ` ${result}` : '')}>
       <div className="match-when">
-        <span>{formatDate(m.endedAt, lang)}{m.source === 'yab-stats' && <span className="src-tag" title={t.importedTip}>{t.imported}</span>}</span>
+        <span>{formatDate(m.endedAt, lang)}{m.source === 'yab-stats' && <span className="src-tag" title={t.importedTip}>{t.imported}</span>}{m.excluded && <span className="src-tag excluded">{t.excludedTag}</span>}</span>
         <span className="muted">{formatDuration(m.durationMs)}</span>
       </div>
       <div className="match-teams">

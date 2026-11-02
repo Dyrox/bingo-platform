@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router';
-import { getMatch, NotFound, type Match, type MatchEvent } from '../api';
+import { Link, useNavigate, useParams } from 'react-router';
+import { deleteMatch, getMatch, getMatchAccess, NotFound, setMatchExcluded, type Match, type MatchEvent } from '../api';
+import { useAccount } from '../account';
+import { announceMatchesChanged } from '../changes';
 import { Status } from '../components/Layout';
 import { TeamCard } from '../components/TeamCard';
 import { PlayerLink, Score } from '../components/Teams';
@@ -34,9 +36,44 @@ export function MatchDetail() {
   );
 }
 
+/** Delete / "doesn't count" for the uploader and admins; nobody else sees it. */
+function ManageMatch({ match, onChange }: { match: Match; onChange: (m: Match | null) => void }) {
+  const { t } = useLang();
+  const { account } = useAccount();
+  const [can, setCan] = useState(false);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (!account?.user) { setCan(false); return; }
+    getMatchAccess(match.id).then(a => setCan(a.canManage)).catch(() => setCan(false));
+  }, [match.id, account?.user]);
+  if (!can) return null;
+
+  const toggle = async () => {
+    setBusy(true);
+    try { await setMatchExcluded(match.id, !match.excluded); onChange({ ...match, excluded: !match.excluded }); announceMatchesChanged(); } finally { setBusy(false); }
+  };
+  const remove = async () => {
+    if (!window.confirm(t.manage.confirm)) return;
+    setBusy(true);
+    try { await deleteMatch(match.id); onChange(null); announceMatchesChanged(); } finally { setBusy(false); }
+  };
+  return (
+    <section className="panel manage">
+      <h2>{t.manage.title}</h2>
+      <label className="manage-row">
+        <input type="checkbox" checked={match.excluded} disabled={busy} onChange={toggle} />
+        <span><b>{t.manage.exclude}</b><span className="muted small"> · {t.manage.excludeHint}</span></span>
+      </label>
+      <button className="pill danger" disabled={busy} onClick={remove}>{t.manage.delete}</button>
+      <p className="muted small">{t.manage.who}</p>
+    </section>
+  );
+}
+
 /** Everything about one match; used as a page and inside the records split view. */
 export function MatchView({ id, compact = false }: { id: string; compact?: boolean }) {
   const { lang, t } = useLang();
+  const nav = useNavigate();
   const [match, setMatch] = useState<Match | null>(null);
   const [error, setError] = useState<'missing' | 'failed' | null>(null);
   const goals = useGoals(match?.modVersion);
@@ -68,7 +105,7 @@ export function MatchView({ id, compact = false }: { id: string; compact?: boole
     <div className={compact ? 'match-view compact' : 'match-view'}>
       {compact && <Link to={`/matches/${match.id}`} className="open-full">{t.openFull} ↗</Link>}
       <div className="match-head">
-        <h1>{formatDate(match.endedAt, lang)}</h1>
+        <h1>{formatDate(match.endedAt, lang)}{match.excluded && <span className="src-tag excluded">{t.excludedTag}</span>}</h1>
         <p className="muted">
           {t.duration} {formatDuration(match.durationMs)} · {winners.length ? `${t.winner}: ${names(winners.map(w => w.id))}` : t.draw}
         </p>
@@ -135,6 +172,9 @@ export function MatchView({ id, compact = false }: { id: string; compact?: boole
           <div><dt>{t.uploadedBy}</dt><dd>{match.uploader}</dd></div>
         </dl>
       </section>
+
+      {/* after a delete, leave the page (the records split view falls back to its list) */}
+      <ManageMatch match={match} onChange={m => m ? setMatch(m) : nav(compact ? '..' : '/matches', { relative: 'path' })} />
     </div>
   );
 }
