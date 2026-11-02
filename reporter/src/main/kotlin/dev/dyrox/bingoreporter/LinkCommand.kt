@@ -8,11 +8,24 @@ import net.minecraft.network.chat.Component
 
 /**
  * "/bingo link <code>" links the Minecraft account that types it to the website account that showed the code.
- * It hangs off YAB's own /bingo command: Brigadier merges both "bingo" literals into one tree.
+ * "/bingo reporter" checks for a newer reporter and whether the upload key works.
+ * Both hang off YAB's own /bingo command: Brigadier merges the "bingo" literals into one tree.
  */
 object LinkCommand {
-    fun register(uploader: () -> Uploader?) {
+    /** `check` starts a status check and calls back with the result; false if the reporter isn't ready. */
+    fun register(uploader: () -> Uploader?, check: ((ReporterStatus) -> Unit) -> Boolean) {
         CommandRegistrationCallback.EVENT.register { dispatcher, _, _ ->
+            dispatcher.register(
+                Commands.literal("bingo").then(Commands.literal("reporter").executes { ctx ->
+                    val source = ctx.source
+                    source.sendSystemMessage(Component.literal("[Bingo] 正在检查… / Checking…").withStyle(ChatFormatting.GRAY))
+                    val started = check { s ->
+                        source.server.execute { Notices.lines(s, Notices.site, full = true).forEach { source.sendSystemMessage(it) } }
+                    }
+                    if (!started) source.sendFailure(Component.literal("Bingo Reporter isn't ready yet"))
+                    1
+                })
+            )
             dispatcher.register(
                 Commands.literal("bingo").then(Commands.literal("link").then(
                     Commands.argument("code", StringArgumentType.word()).executes { ctx ->

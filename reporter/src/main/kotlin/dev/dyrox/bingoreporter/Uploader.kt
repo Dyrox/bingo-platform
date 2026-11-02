@@ -2,6 +2,7 @@ package dev.dyrox.bingoreporter
 
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import org.slf4j.LoggerFactory
 import java.io.IOException
@@ -108,6 +109,36 @@ class Uploader(private val dir: Path, private val configFile: Path) {
                 LinkResult.Failed(e.message ?: e.javaClass.simpleName)
             }
             reply(result)
+        }
+    }
+
+    /** Checks for a newer release and whether the key is accepted, in the background. */
+    fun check(version: String, reply: (ReporterStatus) -> Unit) {
+        executor.execute {
+            val cfg = ReporterConfig.load(configFile)
+            val base = cfg.apiUrl.trimEnd('/')
+            val latest = try {
+                val res = http.send(HttpRequest.newBuilder(URI.create("$base/downloads/reporter.json")).timeout(Duration.ofSeconds(15)).GET().build(),
+                    HttpResponse.BodyHandlers.ofString())
+                if (res.statusCode() == 200) json.parseToJsonElement(res.body()).jsonObject["version"]?.jsonPrimitive?.content else null
+            } catch (e: Exception) {
+                log.debug("Couldn't check for updates: {}", e.message)
+                null
+            }
+            val key = if (cfg.key.isBlank()) KeyState.Missing else try {
+                val res = http.send(HttpRequest.newBuilder(URI.create("$base/api/key")).timeout(Duration.ofSeconds(15))
+                    .header("authorization", "Bearer ${cfg.key}").GET().build(), HttpResponse.BodyHandlers.ofString())
+                when (res.statusCode()) {
+                    200 -> json.parseToJsonElement(res.body()).jsonObject.let { o ->
+                        KeyState.Valid(o["user"]?.jsonPrimitive?.contentOrNull, o["key"]?.jsonPrimitive?.contentOrNull)
+                    }
+                    401 -> KeyState.Invalid
+                    else -> KeyState.Unknown("HTTP ${res.statusCode()}")
+                }
+            } catch (e: Exception) {
+                KeyState.Unknown(e.message ?: e.javaClass.simpleName)
+            }
+            reply(ReporterStatus(version, latest, key))
         }
     }
 

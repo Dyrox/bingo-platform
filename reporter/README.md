@@ -21,6 +21,10 @@ First launch writes `.minecraft/config/bingo-reporter.json`:
 
 Put your upload key in `key` (create one on the website's account page). For local development point `api_url` at `http://localhost:3000`. The file is re-read before every upload, so edits apply right away. With no key, rounds are still saved to the queue and sent once a key is added.
 
+## Updates and the upload key
+
+When the game starts, and every 6 hours after that, the reporter checks the website for a newer release (`/downloads/reporter.json`) and asks `/api/key` whether its upload key still works. The host (the singleplayer/LAN owner) and ops are told in chat when they join: a newer version, with a link to download it; a missing or rejected key; and, once per session, that the key is OK. `/bingo reporter` runs the check on demand. Other players hear nothing, since only whoever runs the game can fix either.
+
 ## /bingo link
 
 `/bingo link <code>` (typed by a player, code from the website's 账号 page) tells the website which Minecraft account belongs to which Discord account. The command hangs off YAB's own `/bingo` and needs this computer's upload key to be set. The game server vouches for who typed it, so only trust links made on servers you trust.

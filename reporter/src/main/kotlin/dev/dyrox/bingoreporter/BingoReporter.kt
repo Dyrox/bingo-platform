@@ -5,6 +5,7 @@ import me.jfenn.bingo.api.BingoEvents
 import me.jfenn.bingo.api.IBingoApi
 import me.jfenn.bingo.api.data.BingoGameStatus
 import net.fabricmc.api.ModInitializer
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
 import net.fabricmc.loader.api.FabricLoader
 import org.slf4j.LoggerFactory
 import java.time.Instant
@@ -28,7 +29,16 @@ object BingoReporter : ModInitializer {
     override fun onInitialize() {
         val loader = FabricLoader.getInstance()
         val configFile = loader.configDir.resolve("bingo-reporter.json")
-        LinkCommand.register { uploader }
+        val ownVersion = version(loader, "bingo-reporter")
+        LinkCommand.register({ uploader }) { reply ->
+            val up = uploader ?: return@register false
+            Notices.site = ReporterConfig.load(configFile).apiUrl
+            up.check(ownVersion) { s -> Notices.status = s; reply(s) }
+            true
+        }
+        ServerPlayConnectionEvents.JOIN.register { handler, _, server ->
+            Notices.onJoin(server, handler.player)
+        }
 
         BingoEvents.INIT.register { _ ->
             // also writes the config template on first run
@@ -37,7 +47,10 @@ object BingoReporter : ModInitializer {
             }
             val up = uploader ?: Uploader(loader.configDir.resolve("bingo-reporter"), configFile).also { uploader = it }
             up.flushAsync()
+            checkStatus(up, ownVersion, configFile)
         }
+        // a long-running server hears about new releases and revoked keys too
+        ticker.scheduleWithFixedDelay({ uploader?.let { checkStatus(it, ownVersion, configFile) } }, 6, 6, TimeUnit.HOURS)
 
         // YAB fires GAME_STARTED again when a finished round is resumed; keep the original start
         BingoEvents.GAME_STARTED.register { e ->
@@ -73,6 +86,21 @@ object BingoReporter : ModInitializer {
             ))
             if (match == null) log.info("Round {} had no players or card; not reporting it", e.id)
             else up.submit(match)
+        }
+    }
+
+    private fun checkStatus(up: Uploader, ownVersion: String, configFile: java.nio.file.Path) {
+        Notices.site = ReporterConfig.load(configFile).apiUrl
+        up.check(ownVersion) { s ->
+            Notices.status = s
+            BingoApi.INSTANCE?.server?.let(Notices::onChecked)
+            if (s.updateAvailable) log.info("Bingo Reporter {} is out (this is {}); download it from the account page", s.latest, s.version)
+            when (val k = s.key) {
+                KeyState.Missing -> {}
+                KeyState.Invalid -> log.warn("The website rejected the upload key in config/bingo-reporter.json; rounds stay queued")
+                is KeyState.Valid -> log.info("Upload key OK ({})", k.user)
+                is KeyState.Unknown -> log.info("Couldn't check the upload key: {}", k.reason)
+            }
         }
     }
 
