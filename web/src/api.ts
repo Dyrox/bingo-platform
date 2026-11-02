@@ -86,6 +86,10 @@ async function send<T>(method: string, path: string, body?: unknown): Promise<T>
   return res.json();
 }
 
+/** Written by CI next to the jar it builds (public/downloads/reporter.json once deployed). */
+export interface ReporterBuild { version: string; file: string; size: number; sha256: string; builtAt: string; commit: string; minecraft: string; yab: string }
+export const getReporterBuild = () => get<ReporterBuild>('/downloads/reporter.json');
+
 export const getAccount = () => get<Account>('/api/me');
 export const logout = () => send<{ ok: true }>('POST', '/api/auth/logout');
 export const createLinkCode = () => send<{ code: string; expiresAt: string }>('POST', '/api/me/link-code');

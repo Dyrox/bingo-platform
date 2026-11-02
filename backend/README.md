@@ -54,9 +54,6 @@ The upload body is documented by `src/payload.ts` and shown in `examples/match.j
 
 ## Deploy
 
-```bash
-POSTGRES_PASSWORD=change-me docker compose up -d --build
-docker compose exec api npx tsx src/scripts/create-key.ts dyrox "MacBook Air"
-```
+Production runs at https://bingo.dyrox.cat. Every push to `main` goes through `.github/workflows/deploy.yml`: tests → reporter jar → one Docker image (API + built site + jar, see the root `Dockerfile`) → GHCR → `docker compose up` on the VPS in `/opt/bingo-platform` (`deploy/compose.yml`). nginx on the VPS proxies the domain to `127.0.0.1:3100` (`deploy/nginx-bingo.dyrox.cat.conf`); the app uses the host's Postgres. `/opt/bingo-platform/.env` (see `deploy/.env.example`) is kept on the server only.
 
-Set `DATABASE_URL` to use any other Postgres. Put it behind HTTPS (Caddy or a hosting platform) before bingo-reporter talks to it.
+In production the backend also serves the website (`WEB_DIST`), so the site and `/api` share one address.

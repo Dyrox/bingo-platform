@@ -14,12 +14,12 @@ First launch writes `.minecraft/config/bingo-reporter.json`:
 
 ```json
 {
-  "api_url": "http://localhost:3000",
+  "api_url": "https://bingo.dyrox.cat",
   "key": ""
 }
 ```
 
-Put your upload key in `key` (from `npm run key:create` in the backend for now; from the website later). The file is re-read before every upload, so edits apply right away. With no key, rounds are still saved to the queue and sent once a key is added.
+Put your upload key in `key` (create one on the website's account page). For local development point `api_url` at `http://localhost:3000`. The file is re-read before every upload, so edits apply right away. With no key, rounds are still saved to the queue and sent once a key is added.
 
 ## /bingo link
 

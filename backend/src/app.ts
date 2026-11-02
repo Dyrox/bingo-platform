@@ -1,4 +1,7 @@
 import { Hono, type Context } from "hono";
+import { serveStatic } from "@hono/node-server/serve-static";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { bodyLimit } from "hono/body-limit";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
@@ -15,7 +18,8 @@ const invalid = (result: { success: true } | { success: false; error: { issues: 
   if (!result.success) return c.json({ error: "invalid_request", issues: result.error.issues }, 400);
 };
 
-export function createApp(db: DB, opts: { auth?: AuthConfig } = {}) {
+/** webDist: the built site (web/dist); when set, everything outside /api is served from it. */
+export function createApp(db: DB, opts: { auth?: AuthConfig; webDist?: string } = {}) {
   const app = new Hono<Env>();
   registerAuthRoutes(app, db, opts.auth ?? { publicUrl: "http://localhost:5173" });
 
@@ -65,6 +69,31 @@ export function createApp(db: DB, opts: { auth?: AuthConfig } = {}) {
       const p = await playerProfile(db, c.req.valid("param").uuid);
       return p ? c.json(p) : c.json({ error: "not_found" }, 404);
     });
+
+  if (opts.webDist) {
+    const root = opts.webDist;
+    const indexHtml = readFileSync(join(root, "index.html"), "utf8");
+    const isApi = (c: Context) => c.req.path === "/api" || c.req.path.startsWith("/api/");
+    const files = serveStatic({ root });
+    app.use("*", async (c, next) => {
+      if (isApi(c)) return next();
+      const found = await files(c, next);
+      // not a file: serveStatic already ran next() (the app shell) and passes its return value through
+      if (!(found instanceof Response)) return;
+      // Vite's hashed bundles never change; goal art changes per release; the reporter jar every deploy
+      const p = c.req.path;
+      found.headers.set("Cache-Control", p.startsWith("/assets/") ? "public, max-age=31536000, immutable"
+        : p.startsWith("/goals/") || p.startsWith("/yab/") ? "public, max-age=86400"
+        : "no-cache");
+      return found;
+    });
+    // client-side routes (/players/…, /matches/…) all load the app shell
+    app.get("*", async (c, next) => {
+      if (isApi(c)) return next();
+      c.header("Cache-Control", "no-cache");
+      return c.html(indexHtml);
+    });
+  }
 
   app.notFound(c => c.json({ error: "not_found" }, 404));
   app.onError((e, c) => {

@@ -192,3 +192,29 @@ describe("timeline events", () => {
     expect((await upload(bad)).status).toBe(400);
   });
 });
+
+describe("serving the site", () => {
+  it("serves files, falls back to the app shell for site routes, and keeps /api as JSON", async () => {
+    const { mkdtempSync, mkdirSync, writeFileSync } = await import("node:fs");
+    const { join } = await import("node:path");
+    const { tmpdir } = await import("node:os");
+    const dist = mkdtempSync(join(tmpdir(), "web-dist-"));
+    writeFileSync(join(dist, "index.html"), "<!doctype html><div id=root></div>");
+    mkdirSync(join(dist, "assets"));
+    writeFileSync(join(dist, "assets", "app-abc123.js"), "console.log(1)");
+    const site = createApp(db, { webDist: dist });
+
+    const asset = await site.request("/assets/app-abc123.js");
+    expect(await asset.text()).toBe("console.log(1)");
+    expect(asset.headers.get("cache-control")).toContain("immutable");
+
+    const route = await site.request("/players/0f3c2d9e-7a51-4b8e-9c33-1d2e4f5a6b70/records");
+    expect(route.status).toBe(200);
+    expect(await route.text()).toContain("<div id=root>");
+
+    const api = await site.request("/api/nope");
+    expect(api.status).toBe(404);
+    expect(await api.json()).toEqual({ error: "not_found" });
+    expect((await site.request("/api/health")).status).toBe(200);
+  });
+});

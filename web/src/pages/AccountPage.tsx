@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
-import { createLinkCode, createUploadKey, logout, revokeUploadKey, unlinkPlayer } from '../api';
+import { createLinkCode, createUploadKey, getReporterBuild, logout, revokeUploadKey, unlinkPlayer, type ReporterBuild } from '../api';
 import { useAccount } from '../account';
 import { Status } from '../components/Layout';
 import { avatarUrl, formatDate } from '../format';
@@ -45,6 +45,38 @@ export function LinkFlow({ onDone }: { onDone: () => void }) {
       <div className="link-command"><code>{command}</code><CopyButton text={command} /></div>
       <span className="muted small">{t.linkWaiting} · {t.linkExpires(Math.round((Date.parse(code.expiresAt) - Date.now()) / 60000))}</span>
     </div>
+  );
+}
+
+const megabytes = (n: number) => `${(n / 1024 / 1024).toFixed(n < 1024 * 1024 ? 2 : 1)} MB`;
+
+/** Download for the latest bingo-reporter jar that CI built and deployed with this site. */
+function ReporterDownload() {
+  const { t, lang } = useLang();
+  const R = t.reporter;
+  const [build, setBuild] = useState<ReporterBuild | null | 'none'>(null);
+  useEffect(() => { getReporterBuild().then(setBuild).catch(() => setBuild('none')); }, []);
+
+  return (
+    <section className="panel reporter">
+      <h2>{R.title}{build && build !== 'none' && <span className="muted count-badge"> v{build.version}</span>}</h2>
+      <p className="muted small">{R.what}</p>
+      {build === 'none' && <p className="muted small">{R.none}</p>}
+      {build && build !== 'none' && (
+        <>
+          <div className="reporter-dl">
+            <a className="dl-btn" href={`/downloads/${build.file}`} download>⬇ {R.download} {build.file}</a>
+            <span className="muted small">
+              {megabytes(build.size)} · {R.built} {formatDate(build.builtAt, lang)} ·{' '}
+              <a href={`https://github.com/Dyrox/bingo-platform/commit/${build.commit}`} target="_blank" rel="noreferrer">{build.commit.slice(0, 7)}</a>
+            </span>
+          </div>
+          <p className="muted small">{R.needs(build.minecraft, build.yab)}</p>
+          <code className="sha muted">sha256 {build.sha256}</code>
+        </>
+      )}
+      <ol className="reporter-steps">{R.steps.map(s => <li key={s}>{s}</li>)}</ol>
+    </section>
   );
 }
 
@@ -141,6 +173,7 @@ export function AccountPage() {
           : <button className="pill" onClick={() => setLinking(true)}>{t.linkPlayer}</button>}
       </section>
 
+      <ReporterDownload />
       <Keys />
     </>
   );

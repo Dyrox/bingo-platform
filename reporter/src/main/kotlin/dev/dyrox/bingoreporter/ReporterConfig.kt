@@ -14,8 +14,7 @@ data class ReporterConfig(
     val key: String = "",
 ) {
     companion object {
-        // TODO: point at the real server once the backend is deployed
-        const val DEFAULT_API_URL = "http://localhost:3000"
+        const val DEFAULT_API_URL = "https://bingo.dyrox.cat"
 
         private val log = LoggerFactory.getLogger("bingo-reporter")
         private val json = Json { prettyPrint = true; ignoreUnknownKeys = true; encodeDefaults = true }

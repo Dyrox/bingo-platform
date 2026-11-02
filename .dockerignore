@@ -1,0 +1,11 @@
+**/node_modules
+**/dist
+**/data
+**/.env
+**/.gradle
+**/build
+**/.kotlin
+reporter
+tools
+.git
+.claude
