@@ -1,4 +1,4 @@
-import { boolean, index, integer, jsonb, pgTable, primaryKey, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { bigint, boolean, index, integer, jsonb, pgTable, primaryKey, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 // Website accounts. Login (Discord etc.) comes later; for now users are created by the key script.
 export const users = pgTable("users", {
@@ -56,7 +56,8 @@ export const matches = pgTable("matches", {
   mcVersion: text("mc_version").notNull(),
   startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
   endedAt: timestamp("ended_at", { withTimezone: true }).notNull(),
-  durationMs: integer("duration_ms").notNull(),
+  // bigint: imported rounds can have been left running for weeks (past int32's ~24.8 days)
+  durationMs: bigint("duration_ms", { mode: "number" }).notNull(),
   options: jsonb("options").notNull().default({}),
   // "reporter": uploaded by bingo-reporter (cards, timeline); "yab-stats": imported from YAB's own bingo.db
   // (results only, no cards)
@@ -101,7 +102,7 @@ export const boards = pgTable("boards", {
 export const matchEvents = pgTable("match_events", {
   matchId: uuid("match_id").notNull().references(() => matches.id, { onDelete: "cascade" }),
   seq: integer("seq").notNull(),
-  tMs: integer("t_ms").notNull(),
+  tMs: bigint("t_ms", { mode: "number" }).notNull(),
   type: text("type").notNull(),
   teamId: text("team_id").notNull(),
   playerUuid: uuid("player_uuid"),

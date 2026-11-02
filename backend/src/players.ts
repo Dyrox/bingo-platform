@@ -101,7 +101,7 @@ async function firsts(db: DB, matchIds: string[]) {
     matchId: matchEvents.matchId,
     teamId: matchEvents.teamId,
     type: matchEvents.type,
-    t: sql<number>`min(${matchEvents.tMs})::int`,
+    t: sql<number>`min(${matchEvents.tMs})::float8`,
   }).from(matchEvents)
     .where(and(inArray(matchEvents.matchId, matchIds), inArray(matchEvents.type, ["line", "card"])))
     .groupBy(matchEvents.matchId, matchEvents.teamId, matchEvents.type);

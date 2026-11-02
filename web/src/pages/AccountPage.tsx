@@ -86,15 +86,20 @@ function YabImport() {
   const { t } = useLang();
   const Y = t.yabImport;
   const [busy, setBusy] = useState(false);
+  const [db, setDb] = useState<File | null>(null);
+  const [logs, setLogs] = useState<File[]>([]);
   const [result, setResult] = useState<ImportResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const pick = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = ''; // so choosing the same file again still triggers
-    if (!file) return;
+  // a picked logs folder brings everything in it; keep only Minecraft's log files
+  const pickLogs = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLogs([...(e.target.files ?? [])].filter(f => /(\.log|\.log\.gz)$/.test(f.name)));
+    e.target.value = '';
+  };
+  const run = async () => {
+    if (!db) return;
     setBusy(true); setResult(null); setError(null);
-    try { setResult(await importYab(file)); }
+    try { setResult(await importYab(db, logs)); }
     catch (err) { const code = (err as Error).message; setError(Y.errors[code] ?? `${t.error} (${code})`); }
     finally { setBusy(false); }
   };
@@ -105,10 +110,23 @@ function YabImport() {
       <p className="muted small">{Y.what}</p>
       <p className="muted small"><code>{Y.where}</code></p>
       <p className="muted small">{Y.server}</p>
-      <label className={'pill file-pick' + (busy ? ' busy' : '')}>
-        {busy ? Y.uploading : Y.choose}
-        <input type="file" accept=".db,.sqlite,application/octet-stream" onChange={pick} disabled={busy} hidden />
-      </label>
+      <p className="muted small">{Y.logsHint}</p>
+      <div className="import-picks">
+        <label className="pill file-pick">
+          {db ? `✔ ${db.name}` : Y.choose}
+          <input type="file" accept=".db,.sqlite,application/octet-stream" onChange={e => { setDb(e.target.files?.[0] ?? null); e.target.value = ''; }} disabled={busy} hidden />
+        </label>
+        <label className="pill file-pick">
+          {logs.length ? `✔ ${Y.logsChosen(logs.length)}` : Y.chooseLogsFolder}
+          {/* webkitdirectory: pick the whole logs/ folder at once */}
+          <input type="file" multiple {...{ webkitdirectory: '' }} onChange={pickLogs} disabled={busy} hidden />
+        </label>
+        <label className="pill file-pick small">
+          {Y.chooseLogFiles}
+          <input type="file" multiple accept=".log,.gz" onChange={pickLogs} disabled={busy} hidden />
+        </label>
+        <button className="pill import-go" onClick={run} disabled={!db || busy}>{busy ? Y.uploading : Y.go}</button>
+      </div>
       {result && <p className="import-ok">✔ {Y.result(result)}</p>}
       {error && <p className="error">{error}</p>}
     </section>

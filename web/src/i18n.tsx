@@ -66,15 +66,18 @@ const strings = {
     goalStat: (a: number, rate: number, avg: string | null) => `出现 ${a} 次 · 完成 ${rate}%` + (avg ? ` · 平均 ${avg}` : ''),
     imported: '导入', importedTip: '从 YAB 的 bingo.db 导入：只有结果，没有棋盘和时间轴',
     importedNote: '这局是从 YAB 自己的记录（bingo.db）导入的：只有胜负、物品数和设置，没有棋盘、回放和时间轴。',
+    importedNoteLogs: '这局是从 YAB 自己的记录（bingo.db）导入的，时间轴是从服务器日志补回的：知道谁几点拿到了哪个目标，但不知道整张棋盘，所以没有棋盘和回放。',
     partialNote: '这份记录只包含上传者那一队，其他队伍和玩家不在里面。',
     yabImport: {
       title: '导入 YAB 历史记录',
       what: 'YAB 会把每局结果存在开房那台电脑（或服务器）上。导入后，你以前的胜负、物品数和游戏时长都会算进统计；没有棋盘和时间轴。已经有的对局会跳过，重复导入也没关系。',
       where: '文件位置：.minecraft/config/yet-another-minecraft-bingo/bingo.db（Modrinth：实例 → 打开文件夹 → config；老版本叫 stats.db）',
       server: '在别人服务器上玩的局，你电脑上只记了你自己那一队。找服务器主人要他那份 bingo.db 导入，就有所有队伍和玩家了。',
-      choose: '选择 bingo.db', uploading: '导入中…',
-      result: (r: { found: number; imported: number; replaced: number; skipped: number; partial: number }) =>
-        `文件里有 ${r.found} 局：新导入 ${r.imported} 局` + (r.replaced ? `，补全 ${r.replaced} 局` : '') + (r.skipped ? `，已存在跳过 ${r.skipped} 局` : '') + (r.partial ? `（其中 ${r.partial} 局只有部分玩家）` : '') + '。',
+      choose: '① 选择 bingo.db', uploading: '导入中…', go: '导入',
+      logsHint: '可选：如果有服务器的 logs 文件夹（latest.log 和 *.log.gz），一起选上，能补回这些对局的时间轴：谁几点拿到了哪个目标、几点连成线。',
+      chooseLogsFolder: '② 选择 logs 文件夹（可选）', chooseLogFiles: '或选日志文件', logsChosen: (n: number) => `${n} 个日志文件`,
+      result: (r: { found: number; imported: number; replaced: number; skipped: number; partial: number; timelines: number }) =>
+        `文件里有 ${r.found} 局：新导入 ${r.imported} 局` + (r.replaced ? `，补全 ${r.replaced} 局` : '') + (r.skipped ? `，已存在跳过 ${r.skipped} 局` : '') + (r.partial ? `（其中 ${r.partial} 局只有部分玩家）` : '') + (r.timelines ? `；从日志补回 ${r.timelines} 局的时间轴` : '') + '。',
       errors: { not_sqlite: '这不是 SQLite 文件。', not_yab: '这个文件里没有 YAB 的对局表，是不是选错文件了？', file_too_large: '文件太大了（上限 50 MB）。', no_file: '没有选文件。', not_logged_in: '请先登录。' } as Record<string, string>,
     },
     excludedTag: '不计入统计',
@@ -165,15 +168,18 @@ const strings = {
     goalStat: (a: number, rate: number, avg: string | null) => `seen ${a}× · ${rate}% done` + (avg ? ` · avg ${avg}` : ''),
     imported: 'Imported', importedTip: 'Imported from YAB’s bingo.db: results only, no card or timeline',
     importedNote: 'This round was imported from YAB’s own records (bingo.db): results, items and settings only, no card, replay or timeline.',
+    importedNoteLogs: 'This round was imported from YAB’s own records (bingo.db), with the timeline rebuilt from the server’s logs: who got which goal when is known, but not the whole card, so there’s no card or replay.',
     partialNote: 'This record only has the uploader’s own team; the other teams and players aren’t in it.',
     yabImport: {
       title: 'Import YAB history',
       what: 'YAB saves every round on the computer (or server) that hosted it. Import it and your past wins, items and playtime count towards your stats; there are no cards or timelines. Rounds already here are skipped, so importing twice is fine.',
       where: 'File: .minecraft/config/yet-another-minecraft-bingo/bingo.db (Modrinth: instance → open folder → config; older versions call it stats.db)',
       server: 'Rounds on someone else’s server are only recorded for your own team on your computer. Ask the server owner for their bingo.db to get every team and player.',
-      choose: 'Choose bingo.db', uploading: 'Importing…',
-      result: (r: { found: number; imported: number; replaced: number; skipped: number; partial: number }) =>
-        `${r.found} rounds in the file: ${r.imported} imported` + (r.replaced ? `, ${r.replaced} completed` : '') + (r.skipped ? `, ${r.skipped} already here` : '') + (r.partial ? ` (${r.partial} with only some players)` : '') + '.',
+      choose: '① Choose bingo.db', uploading: 'Importing…', go: 'Import',
+      logsHint: 'Optional: if you have the server’s logs folder (latest.log and *.log.gz), add it to bring back these rounds’ timelines: who got which goal when, and when lines were made.',
+      chooseLogsFolder: '② Choose the logs folder (optional)', chooseLogFiles: 'or pick log files', logsChosen: (n: number) => `${n} log files`,
+      result: (r: { found: number; imported: number; replaced: number; skipped: number; partial: number; timelines: number }) =>
+        `${r.found} rounds in the file: ${r.imported} imported` + (r.replaced ? `, ${r.replaced} completed` : '') + (r.skipped ? `, ${r.skipped} already here` : '') + (r.partial ? ` (${r.partial} with only some players)` : '') + (r.timelines ? `; timelines for ${r.timelines} from the logs` : '') + '.',
       errors: { not_sqlite: 'That isn’t an SQLite file.', not_yab: 'That file has no YAB match tables. Wrong file?', file_too_large: 'File too large (50 MB max).', no_file: 'No file chosen.', not_logged_in: 'Log in first.' } as Record<string, string>,
     },
     excludedTag: 'Doesn’t count',

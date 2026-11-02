@@ -39,7 +39,7 @@ npm test
 | POST / DELETE | `/api/me/keys`, `/api/me/keys/:id` | session | create (key shown once) / revoke upload keys |
 | GET | `/api/matches/:id/access` | session (optional) | `{ canManage }`: whether this visitor may delete / exclude the match (its uploader, or an admin from `ADMIN_DISCORD_IDS`) |
 | PATCH / DELETE | `/api/matches/:id` | session, uploader or admin | `{ excluded: true }` keeps the round visible but out of every statistic; DELETE removes it with its card and timeline |
-| POST | `/api/me/import/yab` | session | import YAB's own history: multipart `file` = `config/yet-another-minecraft-bingo/bingo.db`. Results only (no cards); skips rounds already here, lets a fuller copy replace a partial import (`src/import-yab.ts`) |
+| POST | `/api/me/import/yab` | session | import YAB's own history: multipart `file` = `config/yet-another-minecraft-bingo/bingo.db`, plus optional repeated `logs` = the server's `logs/*.log.gz` and `latest.log`. Results only (no cards); with logs, timelines are rebuilt from YAB's ScoredItemCheck lines and tied to rounds by end time, duration and team scores (`src/server-logs.ts`). Skips rounds already here; a fuller copy (more players, or a timeline) replaces an earlier import (`src/import-yab.ts`) |
 | POST | `/api/link` | upload key | sent by bingo-reporter when a player types `/bingo link <code>`: links that player's UUID to the code's account |
 | GET | `/api/leaderboard?period=all\|month` | – | everyone ranked by wins: W/L/D, win rate, items, best streak, fastest first line / card (from timelines) |
 | GET | `/api/goals/stats` | – | per goal over team cards: appearances, completions, average and fastest in-game time to complete |

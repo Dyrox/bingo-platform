@@ -39,7 +39,7 @@ export async function goalStats(db: DB, only?: { matchId: string; teamId: string
   // first time each team got each goal in each round (a goal can be lost and regained)
   const times = await db.select({
     matchId: matchEvents.matchId, teamId: matchEvents.teamId, objectiveId: matchEvents.objectiveId,
-    t: sql<number>`min(${matchEvents.tMs})::int`,
+    t: sql<number>`min(${matchEvents.tMs})::float8`,
   }).from(matchEvents)
     .innerJoin(matches, eq(matches.id, matchEvents.matchId))
     .where(and(eq(matchEvents.type, "goal"), eq(matches.excluded, false), matchIds ? inArray(matchEvents.matchId, matchIds) : undefined))

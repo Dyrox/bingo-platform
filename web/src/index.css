@@ -335,6 +335,9 @@ nav a.active, nav a:hover { color: var(--fg); background: var(--chip) }
 .plain-team-head .dot { background: var(--team) }
 .plain-team-head .badge { margin-left: auto }
 .file-pick { display: inline-block; font-weight: 600 }
+.import-picks { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 4px 0 6px }
+.import-go { font-weight: 700; background: var(--fg); color: var(--bg); border-color: var(--fg) }
+.import-go:disabled { background: var(--panel); color: var(--muted); border-color: var(--line) }
 .file-pick.busy { opacity: .6 }
 .import-ok { color: var(--accent); font-weight: 600 }
 

@@ -111,7 +111,7 @@ export function MatchView({ id, compact = false }: { id: string; compact?: boole
         </p>
       </div>
 
-      {match.events.length > 0 && (
+      {match.events.length > 0 && match.source !== 'yab-stats' && (
         <div className={'replay-bar' + (replay.t !== null ? ' on' : '')}>
           <button className="pill replay-play" onClick={replay.toggle} aria-label={replay.playing ? t.replay.pause : t.replay.play}>
             {replay.playing ? '⏸' : '▶'}{replay.t === null && <> {t.replay.start}</>}
@@ -133,7 +133,7 @@ export function MatchView({ id, compact = false }: { id: string; compact?: boole
       {match.source === 'yab-stats' ? (
         // imported from bingo.db: no card to draw, just who played and how it went
         <>
-          <p className="panel imported-note">{t.importedNote}{match.partial && <> {t.partialNote}</>}</p>
+          <p className="panel imported-note">{match.events.length ? t.importedNoteLogs : t.importedNote}{match.partial && <> {t.partialNote}</>}</p>
           <div className="plain-teams">
             {match.teams.map(tm => (
               <div key={tm.id} className={'plain-team' + (tm.winner ? ' won' : '')} style={{ '--team': teamColor(tm.id) } as React.CSSProperties}>
@@ -143,6 +143,13 @@ export function MatchView({ id, compact = false }: { id: string; compact?: boole
               </div>
             ))}
           </div>
+          {/* rebuilt from the server's logs when they were imported too; no replay, as there's no card */}
+          {match.events.length > 0 && goals && (
+            <section className="panel timeline-panel">
+              <h2>{t.timeline}<span className="muted count-badge"> · {match.events.length}</span></h2>
+              <Timeline match={match} goals={goals.goals} version={goals.version} onFocusGoal={() => {}} />
+            </section>
+          )}
         </>
       ) : <>
       <section className="cards-panel" aria-label={t.cards_}>

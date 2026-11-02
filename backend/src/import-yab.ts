@@ -2,7 +2,8 @@ import { DatabaseSync } from "node:sqlite";
 import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import type { DB } from "./db/client.ts";
-import { matches, matchPlayers, matchTeams, players } from "./db/schema.ts";
+import { matchEvents, matches, matchPlayers, matchTeams, players } from "./db/schema.ts";
+import type { Timeline } from "./server-logs.ts";
 
 // Imports YAB's own match history: config/yet-another-minecraft-bingo/bingo.db (stats.db before 2.x),
 // an SQLite file with Game, GameTeam and GamePlayer tables (see YAB's sqldelight/…/V1__init.sqm).
@@ -100,25 +101,33 @@ export function readYabStats(path: string): YabGame[] {
   }
 }
 
-export interface ImportSummary { found: number; imported: number; replaced: number; skipped: number; partial: number }
+export interface ImportSummary { found: number; imported: number; replaced: number; skipped: number; partial: number; timelines: number; failed: number }
 
 /**
- * Stores imported rounds for `userId`. Rounds bingo-reporter already uploaded are left alone (they
- * have cards and timelines); an earlier partial import is replaced by a fuller one; anything else
- * already here is skipped, so importing the same file twice changes nothing.
+ * Stores imported rounds for `userId`, with timelines from the server's logs where there are some.
+ * Rounds bingo-reporter already uploaded are left alone (they have cards and timelines). An earlier
+ * import is replaced when this one knows more: more players, or a timeline it lacked. Anything else
+ * already here is skipped, so importing the same files twice changes nothing.
  */
-export async function importYabGames(db: DB, userId: string, games: YabGame[]): Promise<ImportSummary> {
-  const summary: ImportSummary = { found: games.length, imported: 0, replaced: 0, skipped: 0, partial: 0 };
+export async function importYabGames(db: DB, userId: string, games: YabGame[], timelines = new Map<string, Timeline>()): Promise<ImportSummary> {
+  const summary: ImportSummary = { found: games.length, imported: 0, replaced: 0, skipped: 0, partial: 0, timelines: 0, failed: 0 };
   const knownPlayers = (g: YabGame) => g.teams.reduce((n, t) => n + t.players.length, 0);
 
   for (const g of games) {
-    const [prev] = await db.select({ source: matches.source, partial: matches.partial, players: sql<number>`(select count(*)::int from ${matchPlayers} p where p.match_id = ${matches.id})` })
-      .from(matches).where(eq(matches.id, g.id));
-    if (prev && (prev.source !== "yab-stats" || !prev.partial || prev.players >= knownPlayers(g))) {
+    const [prev] = await db.select({
+      source: matches.source,
+      players: sql<number>`(select count(*)::int from ${matchPlayers} p where p.match_id = ${matches.id})`,
+      events: sql<number>`(select count(*)::int from ${matchEvents} e where e.match_id = ${matches.id})`,
+    }).from(matches).where(eq(matches.id, g.id));
+    const timeline = timelines.get(g.id);
+    const better = prev && prev.source === "yab-stats"
+      && (prev.players < knownPlayers(g) || (!!timeline?.events.length && prev.events === 0));
+    if (prev && !better) {
       summary.skipped++;
       continue;
     }
-    await db.transaction(async tx => {
+    // each round on its own: one odd row shouldn't stop the rest of the file
+    try { await db.transaction(async tx => {
       if (prev) await tx.delete(matches).where(eq(matches.id, g.id));
       for (const p of g.teams.flatMap(t => t.players)) {
         // don't overwrite a newer name the reporter already stored
@@ -130,13 +139,25 @@ export async function importYabGames(db: DB, userId: string, games: YabGame[]): 
         source: "yab-stats", partial: g.partial,
       });
       await tx.insert(matchTeams).values(g.teams.map((t, ord) => ({
-        matchId: g.id, teamId: t.id, ord, items: t.items, lines: 0, cards: 0, winner: t.winner,
+        matchId: g.id, teamId: t.id, ord, items: t.items, winner: t.winner,
+        // bingo.db has no line or card counts; the server log does
+        lines: timeline?.lines.get(t.id) ?? 0, cards: timeline?.cards.get(t.id) ?? 0,
       })));
       const roster = g.teams.flatMap(t => t.players.map(p => ({ matchId: g.id, playerUuid: p.uuid, teamId: t.id, name: p.name })));
       if (roster.length) await tx.insert(matchPlayers).values(roster);
-    });
+      if (timeline?.events.length) {
+        await tx.insert(matchEvents).values(timeline.events.map((e, seq) => ({
+          matchId: g.id, seq, tMs: e.t, type: e.type, teamId: e.team, playerUuid: e.player, objectiveId: e.objectiveId, value: e.value,
+        })));
+      }
+    }); } catch (e) {
+      console.error(`import: round ${g.id} failed`, e);
+      summary.failed++;
+      continue;
+    }
     if (prev) summary.replaced++; else summary.imported++;
     if (g.partial) summary.partial++;
+    if (timeline?.events.length) summary.timelines++;
   }
   return summary;
 }

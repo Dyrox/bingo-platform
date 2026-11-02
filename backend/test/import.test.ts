@@ -64,7 +64,7 @@ describe("importing YAB's bingo.db", () => {
     const path = yabDb(dir, [{ id: G1, players: 2, teams: [["bingo_red", true], ["bingo_blue", false]],
       people: [["bingo_red", DYROX, "Dyrox2333", 12], ["bingo_blue", FRIEND, "FriendMC", 7]] }]);
     const res = await importFile(path);
-    expect(await res.json()).toEqual({ found: 1, imported: 1, replaced: 0, skipped: 0, partial: 0 });
+    expect(await res.json()).toEqual({ found: 1, imported: 1, replaced: 0, skipped: 0, partial: 0 , timelines: 0, failed: 0 });
 
     const m = await (await app.request(`/api/matches/${G1}`)).json();
     expect(m).toMatchObject({ source: "yab-stats", partial: false, durationMs: 2_400_000, boards: [], events: [], uploader: "Dyrox" });
@@ -96,8 +96,8 @@ describe("importing YAB's bingo.db", () => {
       { id: G1, players: 2, teams: [["bingo_red", false]], people: [["bingo_red", DYROX, "Dyrox2333", 1]] },
       { id: G2, players: 2, teams: [["bingo_red", false]], people: [["bingo_red", DYROX, "Dyrox2333", 5]] },
     ]);
-    expect(await (await importFile(mine)).json()).toEqual({ found: 2, imported: 1, replaced: 0, skipped: 1, partial: 1 });
-    expect(await (await importFile(mine)).json()).toEqual({ found: 2, imported: 0, replaced: 0, skipped: 2, partial: 0 });
+    expect(await (await importFile(mine)).json()).toEqual({ found: 2, imported: 1, replaced: 0, skipped: 1, partial: 1 , timelines: 0, failed: 0 });
+    expect(await (await importFile(mine)).json()).toEqual({ found: 2, imported: 0, replaced: 0, skipped: 2, partial: 0 , timelines: 0, failed: 0 });
     expect((await (await app.request(`/api/matches/${G1}`)).json()).boards).toHaveLength(1); // still the reporter's
 
     // the server owner's copy of G2 knows both teams
@@ -119,6 +119,14 @@ describe("importing YAB's bingo.db", () => {
     expect((await (await app.request(`/api/matches/${G1}`)).json()).source).toBe("reporter");
   });
 
+  it("imports a round that was left running for weeks (longer than a 32-bit millisecond count)", async () => {
+    const path = yabDb(dir, [{ id: G1, players: 1, teams: [["bingo_red", false]], people: [["bingo_red", DYROX, "Dyrox2333", 3]] }]);
+    const f = new DatabaseSync(path); f.prepare("UPDATE Game SET duration = ?").run(2_172_815_335); f.close();
+    expect(await (await importFile(path)).json()).toMatchObject({ imported: 1, failed: 0 });
+    expect((await (await app.request(`/api/matches/${G1}`)).json()).durationMs).toBe(2_172_815_335);
+    expect((await profile(DYROX)).allTime.playtimeMs).toBe(2_172_815_335);
+  });
+
   it("rejects other files and logged-out uploads", async () => {
     const txt = join(dir, "x.db");
     (await import("node:fs")).writeFileSync(txt, "hello");
@@ -127,5 +135,83 @@ describe("importing YAB's bingo.db", () => {
     const f = new DatabaseSync(other); f.exec("CREATE TABLE t (x)"); f.close();
     expect(await (await importFile(other)).json()).toMatchObject({ error: "not_yab" });
     expect((await importFile(yabDb(dir, []), false)).status).toBe(401);
+  });
+});
+
+describe("timelines from the server's logs", () => {
+  // rounds in UTC; the server's clock is UTC+8, like the real one
+  const R1 = { id: G1, players: 2, teams: [["bingo_blue", false], ["bingo_pink", true]] as [string, boolean][],
+    people: [["bingo_blue", DYROX, "Dyrox2333", 2], ["bingo_pink", FRIEND, "BugJump", 3]] as [string, string, string, number][] };
+  const R2 = { id: G2, players: 1, teams: [["bingo_blue", true]] as [string, boolean][], people: [["bingo_blue", DYROX, "Dyrox2333", 1]] as [string, string, string, number][] };
+
+  /** YAB's ScoredItemCheck lines for R1: playing at 23:59:50 local, ends 00:40:00 the next day (= 16:40:00Z, 40 min 10 s). */
+  const log = [
+    "[23:59:40] [Server thread/INFO]: GameState changed: LOADING -> COUNTDOWN",
+    "[23:59:50] [Server thread/INFO]: GameState changed: COUNTDOWN -> PLAYING",
+    "[00:00:10] [Server thread/INFO]: [ScoredItemCheck] Dyrox2333 got minecraft:birch_stairs",
+    "[00:00:10] [Server thread/INFO]: [ScoredItemCheck] Updated score for team bingo_blue: TeamScore(items=1, lines=0, cards=0)",
+    "[00:01:00] [Server thread/INFO]: [ScoredItemCheck] BugJump got minecraft:beef",
+    "[00:01:00] [Server thread/INFO]: [ScoredItemCheck] Updated score for team bingo_pink: TeamScore(items=1, lines=0, cards=0)",
+    "[00:05:00] [Server thread/INFO]: [ScoredItemCheck] BugJump got yet-another-minecraft-bingo:challenge/all_wooden_tools",
+    "[00:05:00] [Server thread/INFO]: [ScoredItemCheck] Updated score for team bingo_pink: TeamScore(items=2, lines=1, cards=0)",
+    "[00:20:00] [Server thread/INFO]: [ScoredItemCheck] Dyrox2333 got minecraft:beef",
+    "[00:20:00] [Server thread/INFO]: [ScoredItemCheck] Updated score for team bingo_blue: TeamScore(items=2, lines=0, cards=0)",
+    "[00:40:00] [Server thread/INFO]: [ScoredItemCheck] BugJump got minecraft:cake",
+    "[00:40:00] [Server thread/INFO]: [ScoredItemCheck] Updated score for team bingo_pink: TeamScore(items=3, lines=4, cards=0)",
+    "[00:40:00] [Server thread/INFO]: [ScoredItemCheck] Team bingo_pink has completed their card",
+    "[00:40:00] [Server thread/INFO]: Writing game result to stats.db...",
+    "[00:40:00] [Server thread/INFO]:   Game duration: 40m 0s",
+  ].join("\n");
+
+  /** bingo.db rows with R1 ending at 16:40:00Z (00:40 at UTC+8) after 40 min. */
+  function serverDb(rows: Row[], ends: string[]) {
+    const path = yabDb(dir, rows);
+    const f = new DatabaseSync(path);
+    rows.forEach((r, i) => f.prepare("UPDATE Game SET ended_at = ?, duration = ? WHERE id = ?").run(ends[i], 2_400_000, r.id));
+    f.close();
+    return path;
+  }
+  async function importWithLogs(dbPath: string, logs: { name: string; text: string }[]) {
+    const form = new FormData();
+    form.set("file", new File([readFileSync(dbPath)], "bingo.db"));
+    const { gzipSync } = await import("node:zlib");
+    for (const l of logs) form.append("logs", new File([l.name.endsWith(".gz") ? gzipSync(l.text) : l.text], l.name));
+    return (await app.request("/api/me/import/yab", { method: "POST", body: form, headers: { cookie } })).json();
+  }
+
+  it("rebuilds who got what when, lines and the card, and fills in line/card counts", async () => {
+    const path = serverDb([R1, R2], ["2026-10-20T16:40:00.000Z", "2026-03-01T12:00:00.000Z"]);
+    expect(await importWithLogs(path, [{ name: "2026-10-21-1.log.gz", text: log }])).toMatchObject({ imported: 2, timelines: 1 });
+
+    const m = await (await app.request(`/api/matches/${G1}`)).json();
+    expect(m.events.map((e: any) => [e.t, e.type, e.team, e.player, e.objectiveId, e.value])).toEqual([
+      [20_000, "goal", "bingo_blue", DYROX, "minecraft:birch_stairs", null],
+      [70_000, "goal", "bingo_pink", FRIEND, "minecraft:beef", null],
+      [310_000, "goal", "bingo_pink", FRIEND, "yet-another-minecraft-bingo:challenge/all_wooden_tools", null],
+      [310_000, "line", "bingo_pink", null, null, 1],
+      [1_210_000, "goal", "bingo_blue", DYROX, "minecraft:beef", null],
+      [2_410_000, "goal", "bingo_pink", FRIEND, "minecraft:cake", null],
+      [2_410_000, "line", "bingo_pink", null, null, 4],
+      [2_410_000, "card", "bingo_pink", null, null, 1],
+    ]);
+    expect(m.teams.map((t: any) => [t.id, t.lines, t.cards])).toEqual([["bingo_blue", 0, 0], ["bingo_pink", 4, 1]]);
+    expect((await (await app.request(`/api/matches/${G2}`)).json()).events).toEqual([]);
+    // the leaderboard's fastest line now comes from the imported timeline
+    const pink = (await (await app.request("/api/leaderboard")).json()).players.find((p: any) => p.uuid === FRIEND);
+    expect(pink.fastestLineMs).toBe(310_000);
+  });
+
+  it("adds a timeline to an earlier import that had none, and is idempotent after that", async () => {
+    const path = serverDb([R1], ["2026-10-20T16:40:00.000Z"]);
+    expect(await importWithLogs(path, [])).toMatchObject({ imported: 1, timelines: 0 });
+    expect(await importWithLogs(path, [{ name: "latest.log", text: log }])).toMatchObject({ replaced: 1, timelines: 1 });
+    expect(await importWithLogs(path, [{ name: "latest.log", text: log }])).toMatchObject({ skipped: 1, replaced: 0 });
+  });
+
+  it("leaves out a log round that fits more than one game", async () => {
+    // two rounds with the same end time of day (different days), length and scores
+    const twin = { ...R1, id: G3 };
+    const path = serverDb([R1, twin], ["2026-10-20T16:40:00.000Z", "2026-10-21T16:40:00.000Z"]);
+    expect(await importWithLogs(path, [{ name: "x.log", text: log }])).toMatchObject({ imported: 2, timelines: 0 });
   });
 });

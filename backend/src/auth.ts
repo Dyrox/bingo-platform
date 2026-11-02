@@ -7,6 +7,7 @@ import type { DB } from "./db/client.ts";
 import { linkCodes, matches, players, sessions, uploadKeys, users } from "./db/schema.ts";
 import { createKeyForUser, findKey } from "./keys.ts";
 import { importYabGames, readYabStats } from "./import-yab.ts";
+import { attachTimelines, parseServerLogs } from "./server-logs.ts";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -201,8 +202,11 @@ export function registerAuthRoutes(app: Hono<any>, db: DB, cfg: AuthConfig) {
    * "file" field of a multipart form. Results only (no cards); see import-yab.ts for the rules.
    */
   app.post("/api/me/import/yab", c => withUser(c, async user => {
-    const body = await c.req.parseBody().catch(() => ({} as Record<string, unknown>));
-    const file = body.file;
+    // `file`: bingo.db; `logs` (optional, repeatable): the server's logs/*.log.gz and latest.log
+    const body = await c.req.parseBody({ all: true }).catch(() => ({} as Record<string, unknown>));
+    const file = Array.isArray(body.file) ? body.file[0] : body.file;
+    const logFiles = ([] as unknown[]).concat(body.logs ?? []).filter((f): f is File => f instanceof File);
+    if (logFiles.reduce((n, f) => n + f.size, 0) > 200 * 1024 * 1024) return c.json({ error: "file_too_large" }, 413);
     if (!(file instanceof File)) return c.json({ error: "no_file" }, 400);
     if (file.size > 50 * 1024 * 1024) return c.json({ error: "file_too_large" }, 413);
     const bytes = new Uint8Array(await file.arrayBuffer());
@@ -214,7 +218,9 @@ export function registerAuthRoutes(app: Hono<any>, db: DB, cfg: AuthConfig) {
       writeFileSync(path, bytes);
       let games;
       try { games = readYabStats(path); } catch (e) { return c.json({ error: "not_yab", message: (e as Error).message }, 400); }
-      return c.json(await importYabGames(db, user.id, games));
+      const logs = await Promise.all(logFiles.map(async f => ({ name: f.name, data: new Uint8Array(await f.arrayBuffer()) })));
+      const timelines = logs.length ? attachTimelines(games, parseServerLogs(logs)) : undefined;
+      return c.json(await importYabGames(db, user.id, games, timelines));
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

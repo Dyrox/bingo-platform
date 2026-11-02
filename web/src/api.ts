@@ -113,10 +113,12 @@ export const logout = () => send<{ ok: true }>('POST', '/api/auth/logout');
 export const createLinkCode = () => send<{ code: string; expiresAt: string }>('POST', '/api/me/link-code');
 export const unlinkPlayer = (uuid: string) => send<{ ok: true }>('DELETE', `/api/me/players/${uuid}`);
 export const createUploadKey = (name: string) => send<{ key: string; id: string }>('POST', '/api/me/keys', { name });
-export interface ImportResult { found: number; imported: number; replaced: number; skipped: number; partial: number }
-export async function importYab(file: File): Promise<ImportResult> {
+export interface ImportResult { found: number; imported: number; replaced: number; skipped: number; partial: number; timelines: number }
+/** `logs`: the server's logs/*.log.gz and latest.log, for timelines (optional). */
+export async function importYab(file: File, logs: File[] = []): Promise<ImportResult> {
   const form = new FormData();
   form.set('file', file);
+  for (const l of logs) form.append('logs', l, l.name);
   const res = await fetch('/api/me/import/yab', { method: 'POST', body: form });
   const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(body.error ?? `${res.status}`);
