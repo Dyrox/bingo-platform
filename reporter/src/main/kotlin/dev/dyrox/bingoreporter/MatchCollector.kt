@@ -87,14 +87,23 @@ object MatchCollector {
     }
 
     /**
-     * YAB marks a team as won once it has finished the required number of cards (TeamState.Finished),
-     * which isn't exposed by the API; the card count is, so this reproduces that rule.
+     * YAB marks a team as won by moving it to TeamState.Finished, which the API doesn't expose. Read it from
+     * behind the API (BingoTeamImpl.getTeam().getState()); if that ever moves, fall back to the card count,
+     * which misses a card won on lines (YAB doesn't count the card a team won the game with).
      */
     fun isWinner(team: IBingoTeam, options: IOptionsService): Boolean =
-        when (val win = options.winCondition) {
+        finished(team) ?: when (val win = options.winCondition) {
             is BingoWinCondition.Cards -> team.score.cards >= win.cards
             else -> false
         }
+
+    private fun finished(team: IBingoTeam): Boolean? = try {
+        val inner = team.javaClass.getMethod("getTeam").invoke(team)
+        val state = inner.javaClass.getMethod("getState").invoke(inner)
+        state != null && state.javaClass.simpleName == "Finished"
+    } catch (_: ReflectiveOperationException) {
+        null
+    }
 
     private fun options(o: IOptionsService): JsonObject = buildJsonObject {
         put("winCondition", when (val w = o.winCondition) {

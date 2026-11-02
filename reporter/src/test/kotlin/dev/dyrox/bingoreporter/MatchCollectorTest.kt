@@ -21,6 +21,14 @@ import kotlin.test.assertNull
 
 private class Team(override val id: String, override val players: List<UUID>, override val score: BingoTeamScore) : IBingoTeam
 
+// shaped like YAB's BingoTeamImpl → BingoTeam → TeamState.Finished, which isWinner reads behind the API
+class Finished
+class Playing
+class InnerTeam(val state: Any)
+class YabTeam(override val id: String, override val players: List<UUID>, override val score: BingoTeamScore, state: Any) : IBingoTeam {
+    val team = InnerTeam(state)
+}
+
 private class Cell(
     override val objectiveId: String,
     override val objectiveTier: ObjectiveTier?,
@@ -116,6 +124,18 @@ class MatchCollectorTest {
         val other = card { _, _ -> emptySet() }.let { Card(UUID.randomUUID(), 42, it.cells) }
         val m = MatchCollector.collect(snapshot(teams, Cards(mapOf("red" to card { _, _ -> emptySet() }, "blue" to other))))!!
         assertEquals(listOf(listOf("red"), listOf("blue")), m.boards.map { it.teams })
+    }
+
+    @Test
+    fun `YAB's own team state decides the winner, also for a card won on lines`() {
+        // the round ended on red's 8th line: YAB marked red Finished but counted no finished card
+        val teams = listOf(
+            YabTeam("red", listOf(dyrox), BingoTeamScore(items = 23, lines = 8, cards = 0), Finished()),
+            YabTeam("blue", listOf(friend), BingoTeamScore(items = 21, lines = 4, cards = 0), Playing()),
+        )
+        val shared = card { _, _ -> setOf("red", "blue") }
+        val m = MatchCollector.collect(snapshot(teams, Cards(mapOf("red" to shared, "blue" to shared))))!!
+        assertEquals(listOf(true, false), m.teams.map { it.winner })
     }
 
     @Test
