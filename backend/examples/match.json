@@ -1,0 +1,275 @@
+{
+  "id": "5b0e3a52-2f7d-4c47-9d0a-6a1f2b8c9e10",
+  "modVersion": "2.15.1",
+  "mcVersion": "26.3",
+  "startedAt": "2026-11-01T13:00:00Z",
+  "endedAt": "2026-11-01T13:42:17Z",
+  "durationMs": 2537000,
+  "options": {
+    "winCondition": "FULL_CARD",
+    "timeLimitMinutes": 45,
+    "tierlist": "items"
+  },
+  "teams": [
+    {
+      "id": "red",
+      "items": 10,
+      "lines": 1,
+      "cards": 0,
+      "winner": false,
+      "players": [
+        {
+          "uuid": "0f3c2d9e-7a51-4b8e-9c33-1d2e4f5a6b70",
+          "name": "dyrox"
+        }
+      ]
+    },
+    {
+      "id": "blue",
+      "items": 15,
+      "lines": 0,
+      "cards": 0,
+      "winner": true,
+      "players": [
+        {
+          "uuid": "8a4b6c2d-1e3f-4a5b-8c7d-9e0f1a2b3c4d",
+          "name": "FriendMC"
+        }
+      ]
+    }
+  ],
+  "boards": [
+    {
+      "id": "c1d2e3f4-a5b6-4c7d-8e9f-0a1b2c3d4e5f",
+      "seed": "-4172144997902289642",
+      "teams": [
+        "red",
+        "blue"
+      ],
+      "cells": [
+        {
+          "x": 0,
+          "y": 0,
+          "objectiveId": "minecraft:golden_apple",
+          "tier": "B",
+          "completedBy": []
+        },
+        {
+          "x": 1,
+          "y": 0,
+          "objectiveId": "minecraft:lime_wool_stairs",
+          "tier": "A",
+          "completedBy": [
+            "red",
+            "blue"
+          ]
+        },
+        {
+          "x": 2,
+          "y": 0,
+          "objectiveId": "minecraft:acacia_stairs",
+          "tier": "C",
+          "completedBy": [
+            "blue"
+          ]
+        },
+        {
+          "x": 3,
+          "y": 0,
+          "objectiveId": "minecraft:lever",
+          "tier": "D",
+          "completedBy": [
+            "red"
+          ]
+        },
+        {
+          "x": 4,
+          "y": 0,
+          "objectiveId": "minecraft:bamboo_fence",
+          "tier": "A",
+          "completedBy": [
+            "blue"
+          ]
+        },
+        {
+          "x": 0,
+          "y": 1,
+          "objectiveId": "minecraft:cherry_slab",
+          "tier": "A",
+          "completedBy": [
+            "red"
+          ]
+        },
+        {
+          "x": 1,
+          "y": 1,
+          "objectiveId": "minecraft:purple_harness",
+          "tier": "C",
+          "completedBy": [
+            "red"
+          ]
+        },
+        {
+          "x": 2,
+          "y": 1,
+          "objectiveId": "minecraft:cyan_concrete_slab",
+          "tier": "A",
+          "completedBy": [
+            "blue"
+          ]
+        },
+        {
+          "x": 3,
+          "y": 1,
+          "objectiveId": "minecraft:redstone",
+          "tier": "B",
+          "completedBy": [
+            "red"
+          ]
+        },
+        {
+          "x": 4,
+          "y": 1,
+          "objectiveId": "minecraft:yellow_terracotta",
+          "tier": "C",
+          "completedBy": [
+            "blue"
+          ]
+        },
+        {
+          "x": 0,
+          "y": 2,
+          "objectiveId": "minecraft:brain_coral_block",
+          "tier": "A",
+          "completedBy": [
+            "blue"
+          ]
+        },
+        {
+          "x": 1,
+          "y": 2,
+          "objectiveId": "minecraft:orange_banner",
+          "tier": "C",
+          "completedBy": [
+            "blue"
+          ]
+        },
+        {
+          "x": 2,
+          "y": 2,
+          "objectiveId": "minecraft:shelf_mushroom",
+          "tier": "A",
+          "completedBy": [
+            "blue"
+          ]
+        },
+        {
+          "x": 3,
+          "y": 2,
+          "objectiveId": "minecraft:spire_armor_trim_smithing_template",
+          "tier": "S",
+          "completedBy": [
+            "red",
+            "blue"
+          ]
+        },
+        {
+          "x": 4,
+          "y": 2,
+          "objectiveId": "minecraft:crimson_hyphae",
+          "tier": "A",
+          "completedBy": [
+            "red"
+          ]
+        },
+        {
+          "x": 0,
+          "y": 3,
+          "objectiveId": "minecraft:dark_oak_door",
+          "tier": "C",
+          "completedBy": [
+            "blue"
+          ]
+        },
+        {
+          "x": 1,
+          "y": 3,
+          "objectiveId": "minecraft:brush",
+          "tier": "C",
+          "completedBy": [
+            "red"
+          ]
+        },
+        {
+          "x": 2,
+          "y": 3,
+          "objectiveId": "minecraft:cherry_planks",
+          "tier": "A",
+          "completedBy": [
+            "red"
+          ]
+        },
+        {
+          "x": 3,
+          "y": 3,
+          "objectiveId": "minecraft:warped_pressure_plate",
+          "tier": "A",
+          "completedBy": []
+        },
+        {
+          "x": 4,
+          "y": 3,
+          "objectiveId": "minecraft:cyan_banner",
+          "tier": "A",
+          "completedBy": [
+            "blue"
+          ]
+        },
+        {
+          "x": 0,
+          "y": 4,
+          "objectiveId": "minecraft:shield",
+          "tier": "C",
+          "completedBy": [
+            "red",
+            "blue"
+          ]
+        },
+        {
+          "x": 1,
+          "y": 4,
+          "objectiveId": "minecraft:chiseled_tuff_bricks",
+          "tier": "C",
+          "completedBy": [
+            "blue"
+          ]
+        },
+        {
+          "x": 2,
+          "y": 4,
+          "objectiveId": "minecraft:brewing_stand",
+          "tier": "A",
+          "completedBy": [
+            "blue"
+          ]
+        },
+        {
+          "x": 3,
+          "y": 4,
+          "objectiveId": "minecraft:turtle_egg",
+          "tier": "C",
+          "completedBy": []
+        },
+        {
+          "x": 4,
+          "y": 4,
+          "objectiveId": "minecraft:goat_horn",
+          "tier": "A",
+          "completedBy": [
+            "blue"
+          ]
+        }
+      ]
+    }
+  ]
+}

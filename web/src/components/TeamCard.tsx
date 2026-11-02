@@ -1,0 +1,70 @@
+import type { Board, Team } from '../api';
+import { prettyId, type Goal, type Goals } from '../goals';
+import { useLang } from '../i18n';
+import { cardLabel, cardStyle, teamName } from '../teams';
+import { GoalIcon } from './GoalIcon';
+import { McText } from './McText';
+import { PlayerLink, Score } from './Teams';
+
+// Geometry from the mod's ClientCardBufferRenderer, in card pixels:
+// the frame is 122x132, tile (x, y) is an 18x18 slot at (12 + 20x, 22 + 20y), the item is 16x16 at +1,+1,
+// decorations are 20x20 at -1,-1, and the team name is drawn at (12, 10), cut to 70px.
+const W = 122, H = 132;
+const pctX = (n: number) => `${(n / W) * 100}%`;
+const pctY = (n: number) => `${(n / H) * 100}%`;
+const UNIT = 'calc(100cqw / 122)'; // one card pixel, in CSS
+const ACHIEVED = '#55ff55';        // BingoCardColors.DEFAULTS.tileAchievedColor
+
+/** Which goals the mod frames with the little star (see Decoration.ADVANCEMENT in YAB's objective managers). */
+const starred = (g?: Goal) => !!g && (g.c === 'advancement' || (g.c === 'challenge' && g.k === 'stat'));
+
+/** One team's view of its card, drawn like the mod's end-of-game screen. */
+export function TeamCard({ team, board, goals, version, highlight }: {
+  team: Team; board: Board; goals: Goals; version: string; highlight?: string | null;
+}) {
+  const { lang, t } = useLang();
+  const style = cardStyle(team.id);
+  const at = new Map(board.cells.map(c => [`${c.x},${c.y}`, c]));
+  const sep = lang === 'zh' ? '、' : ', ';
+
+  return (
+    <figure className="team-board">
+      <div className="mc-card" style={{ backgroundImage: `url(${style.frame})` }}>
+        <McText text={cardLabel(team.id, team.players)} color={style.text} unit={UNIT} maxWidth={70}
+          style={{ position: 'absolute', left: pctX(12), top: pctY(10) }} />
+        {team.winner && (
+          <McText text="WINNER!" color={style.accent} unit={UNIT} shadow className="winner-tag" />
+        )}
+        {Array.from({ length: 25 }, (_, i) => {
+          const x = i % 5, y = Math.floor(i / 5);
+          const cell = at.get(`${x},${y}`);
+          if (!cell) return null;
+          const goal = goals[cell.objectiveId];
+          const name = goal ? (lang === 'zh' ? goal.z ?? goal.n : goal.n) : prettyId(cell.objectiveId);
+          const got = cell.completedBy.includes(team.id);
+          const others = cell.completedBy.filter(id => id !== team.id);
+          const tier = cell.tier ?? goal?.t;
+          return (
+            <div key={i} className={'tile' + (highlight === cell.objectiveId ? ' flash' : '')} tabIndex={0} aria-label={name}
+              style={{ left: pctX(12 + x * 20), top: pctY(22 + y * 20), width: pctX(18), height: pctY(18), background: got ? ACHIEVED : undefined }}>
+              <span className="tile-item">
+                <GoalIcon goal={goal} version={version} size="100%" />
+              </span>
+              {starred(goal) && <img className="tile-deco" src="/yab/image_frame_advancement.png" alt="" />}
+              <span className="tile-tip" role="tooltip">
+                <b>{name}</b>
+                {tier && <span className="tip-tier" style={{ color: `var(--t${tier})` }}>{tier}</span>}
+                <span className={got ? 'tip-got' : 'tip-miss'}>{got ? '✔ ' + t.got : '✘ ' + t.missed}</span>
+                {others.length > 0 && <span className="tip-others">{t.alsoBy}{others.map(o => teamName(o, lang)).join(sep)}</span>}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+      <figcaption>
+        <Score team={team} />
+        <div className="team-players">{team.players.map(p => <PlayerLink key={p.uuid} {...p} />)}</div>
+      </figcaption>
+    </figure>
+  );
+}

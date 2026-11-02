@@ -1,0 +1,36 @@
+{
+  "name": "bingo-backend",
+  "version": "1.0.0",
+  "description": "Match history API for Yet Another Minecraft Bingo",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "tsx src/server.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "key:create": "tsx src/scripts/create-key.ts",
+    "upload:sample": "tsx src/scripts/upload-sample.ts"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "^0.5.14",
+    "@hono/node-server": "^2.1.5",
+    "@hono/zod-validator": "^0.9.1",
+    "drizzle-orm": "^0.45.4",
+    "hono": "^4.13.16",
+    "pg": "^8.23.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/pg": "^8.23.1",
+    "drizzle-kit": "^0.31.11",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
+  },
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.6"
+  }
+}

@@ -1,0 +1,94 @@
+// Shapes returned by the backend (see backend/src/matches.ts).
+
+export interface Player { uuid: string; name: string }
+export interface Team { id: string; items: number; lines: number; cards: number; winner: boolean; players: Player[] }
+export interface Cell { x: number; y: number; objectiveId: string; tier: string | null; completedBy: string[] }
+export interface Board { id: string; seed: string; teams: string[]; cells: Cell[] }
+
+export interface MatchSummary {
+  id: string;
+  modVersion: string;
+  mcVersion: string;
+  startedAt: string;
+  endedAt: string;
+  durationMs: number;
+  uploader: string;
+  teams: Team[];
+}
+
+/** Timeline entry from bingo-reporter; t is in-game time in ms. */
+export interface MatchEvent {
+  t: number;
+  type: 'goal' | 'lost' | 'line' | 'card';
+  team: string;
+  player: string | null;
+  objectiveId: string | null;
+  value: number | null;
+}
+
+export interface Match extends MatchSummary {
+  options: Record<string, unknown>;
+  boards: Board[];
+  events: MatchEvent[];
+}
+
+export interface MatchPage { matches: MatchSummary[]; next: string | null }
+
+export class NotFound extends Error {}
+
+async function get<T>(path: string): Promise<T> {
+  const res = await fetch(path);
+  if (res.status === 404) throw new NotFound(path);
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  return res.json();
+}
+
+export function listMatches(opts: { player?: string; before?: string; limit?: number } = {}) {
+  const q = new URLSearchParams();
+  if (opts.player) q.set('player', opts.player);
+  if (opts.before) q.set('before', opts.before);
+  q.set('limit', String(opts.limit ?? 20));
+  return get<MatchPage>(`/api/matches?${q}`);
+}
+
+export const getMatch = (id: string) => get<Match>(`/api/matches/${encodeURIComponent(id)}`);
+
+export type Result = 'win' | 'loss' | 'draw';
+
+export interface PlayerTotals { games: number; wins: number; losses: number; draws: number; items: number; playtimeMs: number; bestItems: number }
+
+export interface PlayerProfile {
+  uuid: string;
+  name: string;
+  firstPlayed: string | null;
+  lastPlayed: string | null;
+  allTime: PlayerTotals & { winStreak: number; bestWinStreak: number };
+  monthly: PlayerTotals;
+  favoriteTeam: { teamId: string; share: number } | null;
+  history: { id: string; endedAt: string; durationMs: number; teamId: string; items: number; lines: number; cards: number; teams: number; result: Result }[];
+}
+
+export interface PlayerListing { uuid: string; name: string; games: number; lastPlayed: string }
+
+export const getPlayer = (uuid: string) => get<PlayerProfile>(`/api/players/${encodeURIComponent(uuid)}`);
+export const listPlayers = () => get<{ players: PlayerListing[] }>('/api/players').then(r => r.players);
+
+export interface Account {
+  user: { id: string; name: string; avatarUrl: string | null } | null;
+  discord: boolean;
+  players?: Player[];
+  keys?: { id: string; name: string; prefix: string; createdAt: string; lastUsedAt: string | null }[];
+}
+
+async function send<T>(method: string, path: string, body?: unknown): Promise<T> {
+  const res = await fetch(path, { method, headers: body ? { 'content-type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined });
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  return res.json();
+}
+
+export const getAccount = () => get<Account>('/api/me');
+export const logout = () => send<{ ok: true }>('POST', '/api/auth/logout');
+export const createLinkCode = () => send<{ code: string; expiresAt: string }>('POST', '/api/me/link-code');
+export const unlinkPlayer = (uuid: string) => send<{ ok: true }>('DELETE', `/api/me/players/${uuid}`);
+export const createUploadKey = (name: string) => send<{ key: string; id: string }>('POST', '/api/me/keys', { name });
+export const revokeUploadKey = (id: string) => send<{ ok: true }>('DELETE', `/api/me/keys/${id}`);

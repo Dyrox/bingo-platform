@@ -1,0 +1,28 @@
+# Production-style setup: real Postgres plus the API. Locally you don't need this; `npm run dev` uses embedded PGlite.
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: bingo
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bingo}
+      POSTGRES_DB: bingo
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bingo"]
+      interval: 5s
+      retries: 10
+
+  api:
+    build: .
+    environment:
+      DATABASE_URL: postgres://bingo:${POSTGRES_PASSWORD:-bingo}@db:5432/bingo
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:

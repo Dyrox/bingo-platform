@@ -1,0 +1,75 @@
+import { Hono, type Context } from "hono";
+import { bodyLimit } from "hono/body-limit";
+import { zValidator } from "@hono/zod-validator";
+import { z } from "zod";
+import type { DB } from "./db/client.ts";
+import { findKey } from "./keys.ts";
+import { ConflictError, getMatch, listMatches, saveMatch } from "./matches.ts";
+import { MatchUpload } from "./payload.ts";
+import { listPlayers, playerProfile } from "./players.ts";
+import { registerAuthRoutes, type AuthConfig } from "./auth.ts";
+
+type Env = { Variables: { key: NonNullable<Awaited<ReturnType<typeof findKey>>> } };
+
+const invalid = (result: { success: true } | { success: false; error: { issues: unknown[] } }, c: Context) => {
+  if (!result.success) return c.json({ error: "invalid_request", issues: result.error.issues }, 400);
+};
+
+export function createApp(db: DB, opts: { auth?: AuthConfig } = {}) {
+  const app = new Hono<Env>();
+  registerAuthRoutes(app, db, opts.auth ?? { publicUrl: "http://localhost:5173" });
+
+  app.get("/api/health", c => c.json({ ok: true }));
+
+  app.post("/api/matches",
+    bodyLimit({ maxSize: 512 * 1024, onError: c => c.json({ error: "payload_too_large" }, 413) }),
+    async (c, next) => {
+      const token = c.req.header("authorization")?.match(/^Bearer (\S+)$/)?.[1];
+      const key = token && await findKey(db, token);
+      if (!key) return c.json({ error: "invalid_key" }, 401);
+      c.set("key", key);
+      await next();
+    },
+    zValidator("json", MatchUpload, invalid),
+    async c => {
+      const m = c.req.valid("json");
+      try {
+        const { created } = await saveMatch(db, m, c.get("key"));
+        return c.json({ id: m.id, created }, created ? 201 : 200);
+      } catch (e) {
+        if (e instanceof ConflictError) return c.json({ error: "conflict", message: e.message }, 409);
+        throw e;
+      }
+    });
+
+  app.get("/api/matches",
+    zValidator("query", z.object({
+      player: z.uuid().optional(),
+      limit: z.coerce.number().int().min(1).max(100).default(20),
+      before: z.iso.datetime({ offset: true }).optional(),
+    }), invalid),
+    async c => c.json(await listMatches(db, c.req.valid("query"))));
+
+  app.get("/api/matches/:id",
+    zValidator("param", z.object({ id: z.uuid() }), invalid),
+    async c => {
+      const m = await getMatch(db, c.req.valid("param").id);
+      return m ? c.json(m) : c.json({ error: "not_found" }, 404);
+    });
+
+  app.get("/api/players", async c => c.json({ players: await listPlayers(db) }));
+
+  app.get("/api/players/:uuid",
+    zValidator("param", z.object({ uuid: z.uuid() }), invalid),
+    async c => {
+      const p = await playerProfile(db, c.req.valid("param").uuid);
+      return p ? c.json(p) : c.json({ error: "not_found" }, 404);
+    });
+
+  app.notFound(c => c.json({ error: "not_found" }, 404));
+  app.onError((e, c) => {
+    console.error(e);
+    return c.json({ error: "internal_error" }, 500);
+  });
+  return app;
+}

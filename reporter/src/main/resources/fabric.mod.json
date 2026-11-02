@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "bingo-reporter",
+  "version": "${version}",
+  "name": "Bingo Reporter",
+  "description": "Uploads finished Yet Another Minecraft Bingo rounds to a bingo platform server.",
+  "authors": ["dyrox"],
+  "license": "LGPL-3.0-or-later",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      { "adapter": "kotlin", "value": "dev.dyrox.bingoreporter.BingoReporter" }
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.0",
+    "minecraft": ">=26.3",
+    "java": ">=25",
+    "fabric-language-kotlin": ">=1.13.0",
+    "fabric-api": "*",
+    "yet-another-minecraft-bingo-api": ">=2.15.0"
+  }
+}

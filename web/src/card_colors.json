@@ -1,0 +1,67 @@
+{
+  "teams": {
+    "preview": {
+      "backgroundColor": "#80686868",
+      "textColor": "#ff233034",
+      "outlineColor": "#00000000",
+      "cardTexture": "minecraft:bingo/card_preview",
+      "cardTextureGui": "minecraft:bingo/card_preview_shadowed"
+    },
+    "orange": {
+      "backgroundColor": "#80835a49",
+      "textColor": "#ffe9a03a",
+      "outlineColor": "#ffffaa00",
+      "cardTexture": "minecraft:bingo/card_orange",
+      "cardTextureGui": "minecraft:bingo/card_orange_shadowed"
+    },
+    "gray": {
+      "backgroundColor": "#806f7276",
+      "textColor": "#ff171b1c",
+      "outlineColor": "#ff555555",
+      "cardTexture": "minecraft:bingo/card_gray",
+      "cardTextureGui": "minecraft:bingo/card_gray_shadowed"
+    },
+    "blue": {
+      "backgroundColor": "#802a3546",
+      "textColor": "#ff111e22",
+      "outlineColor": "#ff5555ff",
+      "cardTexture": "minecraft:bingo/card_blue",
+      "cardTextureGui": "minecraft:bingo/card_blue_shadowed"
+    },
+    "green": {
+      "backgroundColor": "#80515d54",
+      "textColor": "#ff0f242a",
+      "outlineColor": "#ff1d901d",
+      "cardTexture": "minecraft:bingo/card_green",
+      "cardTextureGui": "minecraft:bingo/card_green_shadowed"
+    },
+    "aqua": {
+      "backgroundColor": "#804d5a6c",
+      "textColor": "#ff211835",
+      "outlineColor": "#ff55ffff",
+      "cardTexture": "minecraft:bingo/card_aqua",
+      "cardTextureGui": "minecraft:bingo/card_aqua_shadowed"
+    },
+    "red": {
+      "backgroundColor": "#80573838",
+      "textColor": "#ffe3a64b",
+      "outlineColor": "#ffff5555",
+      "cardTexture": "minecraft:bingo/card_red",
+      "cardTextureGui": "minecraft:bingo/card_red_shadowed"
+    },
+    "pink": {
+      "backgroundColor": "#80856b73",
+      "textColor": "#ff48323d",
+      "outlineColor": "#ffff7cff",
+      "cardTexture": "minecraft:bingo/card_pink",
+      "cardTextureGui": "minecraft:bingo/card_pink_shadowed"
+    },
+    "yellow": {
+      "backgroundColor": "#80916d38",
+      "textColor": "#ff5e2917",
+      "outlineColor": "#ffffff55",
+      "cardTexture": "minecraft:bingo/card_yellow",
+      "cardTextureGui": "minecraft:bingo/card_yellow_shadowed"
+    }
+  }
+}
