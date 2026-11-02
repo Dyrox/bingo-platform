@@ -6,6 +6,7 @@ import me.jfenn.bingo.api.card.ICardService
 import me.jfenn.bingo.api.card.ObjectiveTier
 import me.jfenn.bingo.api.data.BingoTeamScore
 import me.jfenn.bingo.api.data.IBingoTeam
+import me.jfenn.bingo.api.options.BingoGoal
 import me.jfenn.bingo.api.options.BingoWinCondition
 import me.jfenn.bingo.api.options.EndWhen
 import me.jfenn.bingo.api.options.IOptionsService
@@ -25,6 +26,17 @@ private class Team(override val id: String, override val players: List<UUID>, ov
 class Finished
 class Playing
 class InnerTeam(val state: Any)
+// and BingoCardEntryAccess → BingoObjective → ObjectiveDisplay.Resolved → IItemStack, for a tile's count
+class Stack(val count: Int)
+class Display(val item: Stack)
+class Objective(val display: Display)
+class YabCell(n: Int) { val objective = Objective(Display(Stack(n))) }
+class ItemObjective(val itemCount: Int)
+class YabItemCell(n: Int) { val objective = ItemObjective(n) }
+// and OptionsService.options (private) → BingoOptions.cards → BingoCardOptions.goal
+class CardOptions(val goal: BingoGoal)
+class InnerOptions(val cards: List<CardOptions>)
+class YabOptions(goals: List<BingoGoal>) { private val options = InnerOptions(goals.map { CardOptions(it) }) }
 class YabTeam(override val id: String, override val players: List<UUID>, override val score: BingoTeamScore, state: Any) : IBingoTeam {
     val team = InnerTeam(state)
 }
@@ -136,6 +148,20 @@ class MatchCollectorTest {
         val shared = card { _, _ -> setOf("red", "blue") }
         val m = MatchCollector.collect(snapshot(teams, Cards(mapOf("red" to shared, "blue" to shared))))!!
         assertEquals(listOf(true, false), m.teams.map { it.winner })
+    }
+
+    @Test
+    fun `reads the count YAB rolled for a tile`() {
+        assertEquals(17, MatchCollector.count(YabCell(17)))
+        assertNull(MatchCollector.count(YabCell(1)), "a single item shows no number in game")
+        assertNull(MatchCollector.count(Any()), "anything else: no count")
+        assertEquals(23, MatchCollector.count(YabItemCell(23)), "item goals: the rolled itemCount")
+    }
+
+    @Test
+    fun `reads each card's goal`() {
+        assertEquals(listOf("lines:8", "items:20"), MatchCollector.cardGoals(YabOptions(listOf(BingoGoal.Lines(8), BingoGoal.Items(20)))))
+        assertNull(MatchCollector.cardGoals(Options()), "not YAB's options: unknown")
     }
 
     @Test

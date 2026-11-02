@@ -58,4 +58,6 @@ data class CellPayload(
     val objectiveId: String,
     val tier: String?,
     val completedBy: List<String>,
+    /** How many the goal asks for on this card ("collect 4–32 rotten flesh" rolls one), when more than 1. */
+    val count: Int? = null,
 )

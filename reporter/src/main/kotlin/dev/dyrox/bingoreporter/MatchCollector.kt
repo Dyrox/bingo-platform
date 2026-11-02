@@ -2,10 +2,12 @@ package dev.dyrox.bingoreporter
 
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import me.jfenn.bingo.api.card.ICardService
 import me.jfenn.bingo.api.data.IBingoTeam
+import me.jfenn.bingo.api.options.BingoGoal
 import me.jfenn.bingo.api.options.BingoWinCondition
 import me.jfenn.bingo.api.options.EndWhen
 import me.jfenn.bingo.api.options.IOptionsService
@@ -52,6 +54,7 @@ object MatchCollector {
                             objectiveId = cell.objectiveId,
                             tier = cell.objectiveTier?.name,
                             completedBy = teamIds.filter { cell.hasTeamAchieved(it) },
+                            count = count(cell),
                         )
                     }
                 }
@@ -97,6 +100,48 @@ object MatchCollector {
             else -> false
         }
 
+    /**
+     * The number on a tile. YAB rolls an item goal's amount when it builds the card and puts it on the tile's
+     * item stack, which the game draws like any stack size; the API doesn't expose it, so read
+     * BingoCardEntryAccess.getObjective().getDisplay().getItem().getCount().
+     */
+    fun count(cell: Any): Int? = try {
+        val objective = cell.javaClass.getMethod("getObjective").invoke(cell)
+        // item goals (and "collect 4–32 X" challenges, which are item goals) keep the rolled amount here
+        objective.javaClass.methods.firstOrNull { it.name == "getItemCount" && it.parameterCount == 0 }
+            ?.let { return (it.invoke(objective) as? Int)?.takeIf { n -> n > 1 } }
+        val display = objective.javaClass.getMethod("getDisplay").invoke(objective)
+        val item = display?.javaClass?.getMethod("getItem")?.invoke(display)
+        (item?.javaClass?.getMethod("getCount")?.invoke(item) as? Int)?.takeIf { it > 1 }
+    } catch (_: ReflectiveOperationException) {
+        null
+    }
+
+    /**
+     * What finishes each card: "lines:8", "items:20" or "full". "Play until 1 card" with an 8-line card goal is
+     * won at 8 lines. Not in the API; read from YAB's OptionsService.options.cards[i].goal.
+     */
+    fun cardGoals(o: Any): List<String>? = try {
+        val field = o.javaClass.getDeclaredField("options").apply { isAccessible = true }
+        val options = field.get(o)
+        val cards = options.javaClass.getMethod("getCards").invoke(options) as List<*>
+        cards.map { card ->
+            when (val goal = card!!.javaClass.getMethod("getGoal").invoke(card)) {
+                is BingoGoal -> when {
+                    goal.isFullCard() -> "full"
+                    goal is BingoGoal.Lines -> "lines:${goal.lines}"
+                    goal is BingoGoal.Items -> "items:${goal.items}"
+                    else -> "full"
+                }
+                else -> return null
+            }
+        }.takeIf { it.isNotEmpty() }
+    } catch (_: ReflectiveOperationException) {
+        null
+    } catch (_: RuntimeException) {
+        null
+    }
+
     private fun finished(team: IBingoTeam): Boolean? = try {
         val inner = team.javaClass.getMethod("getTeam").invoke(team)
         val state = inner.javaClass.getMethod("getState").invoke(inner)
@@ -117,6 +162,7 @@ object MatchCollector {
             is EndWhen.TeamsWin -> "teams_win:${e.teams}"
             EndWhen.AllWin -> "all_win"
         })
+        cardGoals(o)?.let { goals -> put("cardGoals", buildJsonArray { goals.forEach { add(JsonPrimitive(it)) } }) }
         put("stalemate", o.stalemateBehavior.name.lowercase())
         o.timeLimit?.let { put("timeLimitSeconds", it.toSeconds()) }
         put("pvp", o.isPvpEnabled)
