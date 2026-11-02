@@ -10,7 +10,7 @@ const strings = {
     winner: '胜利', draw: '无人获胜', items: '物品', lines: '连线', cards: '卡',
     duration: '用时', uploadedBy: '上传者', mod: '模组版本', seed: '种子', card: '棋盘',
     cardOf: (teams: string) => `${teams} 的棋盘`, completedBy: '完成：', notCompleted: '无人完成',
-    got: '已完成', missed: '未完成', alsoBy: '其他完成的队伍：', cards_: '棋盘',
+    got: '已完成', missed: '未完成', alsoBy: '其他完成的队伍：', cards_: '棋盘', countHere: (n: number) => `这张棋盘要 ${n} 个`,
     settings: '设置', games: '局数', wins: '胜场', recentOf: (n: number) => `最近 ${n} 局`,
     player: '玩家', vs: '对',
     opt: {
@@ -18,8 +18,9 @@ const strings = {
       nightVision: '夜视', keepInventory: '死亡不掉落', unlockRecipes: '解锁配方', playerKit: '玩家装备包', teamKit: '队伍装备包',
       spawnDimension: '出生维度', spawnDistance: '出生距离', stalemate: '僵局处理', goal: '获胜目标', mode: '模式',
     } as Record<string, string>,
+    cardsEach: (n: number, goal: string) => `完成 ${n} 张卡（每张 ${goal}）`,
     optValue: {
-      cards: (n: number) => `完成 ${n} 张卡`, infinite: '无限', replace_goals: '替换目标',
+      cards: (n: number) => `完成 ${n} 张卡`, infinite: '无限', replace_goals: '替换目标', full: '全卡',
       lines: (n: number) => `${n} 条线`, items: (n: number) => n >= 25 ? '全卡（25 个物品）' : `${n} 个物品`,
       lockout: '锁定模式', inventory: '背包模式', hidden_items: '隐藏物品',
       never: '不自动结束', first_win: '有队伍获胜即结束', teams_win: (n: number) => `${n} 队获胜后结束`, all_win: '所有队伍完成后结束',
@@ -120,7 +121,7 @@ const strings = {
     winner: 'Winner', draw: 'No winner', items: 'items', lines: 'lines', cards: 'cards',
     duration: 'Duration', uploadedBy: 'Uploaded by', mod: 'Mod version', seed: 'Seed', card: 'Card',
     cardOf: (teams: string) => `${teams}’s card`, completedBy: 'Completed by ', notCompleted: 'Not completed',
-    got: 'Completed', missed: 'Not completed', alsoBy: 'Also completed by ', cards_: 'Cards',
+    got: 'Completed', missed: 'Not completed', alsoBy: 'Also completed by ', cards_: 'Cards', countHere: (n: number) => `${n} needed on this card`,
     settings: 'Settings', games: 'Games', wins: 'Wins', recentOf: (n: number) => n === 1 ? 'Last game' : `Last ${n} games`,
     player: 'Player', vs: 'vs',
     opt: {
@@ -128,8 +129,9 @@ const strings = {
       nightVision: 'Night vision', keepInventory: 'Keep inventory', unlockRecipes: 'Unlock recipes', playerKit: 'Player kit', teamKit: 'Team kit',
       spawnDimension: 'Spawn dimension', spawnDistance: 'Spawn distance', stalemate: 'Stalemate', goal: 'Goal', mode: 'Mode',
     } as Record<string, string>,
+    cardsEach: (n: number, goal: string) => `${n} cards (${goal} each)`,
     optValue: {
-      cards: (n: number) => `${n} card${n === 1 ? '' : 's'}`, infinite: 'Infinite', replace_goals: 'Replace goals',
+      cards: (n: number) => `${n} card${n === 1 ? '' : 's'}`, infinite: 'Infinite', replace_goals: 'Replace goals', full: 'Full card',
       lines: (n: number) => `${n} line${n === 1 ? '' : 's'}`, items: (n: number) => n >= 25 ? 'Full card (25 items)' : `${n} items`,
       lockout: 'Lockout', inventory: 'Inventory', hidden_items: 'Hidden items',
       never: 'Never', first_win: 'First team wins', teams_win: (n: number) => `${n} teams win`, all_win: 'All teams finish',

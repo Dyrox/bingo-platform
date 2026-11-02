@@ -9,6 +9,7 @@ const Cell = z.object({
   objectiveId: z.string().min(1).max(200),
   tier: z.enum(["S", "A", "B", "C", "D"]).nullable().default(null),
   completedBy: z.array(z.string()).default([]),
+  count: z.number().int().min(1).max(100_000).nullish(),
 });
 
 const Board = z.object({

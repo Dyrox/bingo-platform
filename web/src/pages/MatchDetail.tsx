@@ -25,6 +25,27 @@ function optionValue(key: string, v: unknown, t: Strings): string {
   return String(v).replace(/^minecraft:/, '').replace(/_/g, ' ');
 }
 
+/**
+ * "Play until 1 card" only means something with the card's own goal: a card can be finished by 8 lines.
+ * Reporters from 0.1.13 send it (cardGoals); for older rounds, a winner whose last line ended the game
+ * shows what it was.
+ */
+function winCondition(match: Match, t: Strings): string | null {
+  const win = String(match.options.winCondition ?? '');
+  if (!win.startsWith('cards:')) return null;
+  const n = Number(win.split(':')[1]);
+  let goals = Array.isArray(match.options.cardGoals) ? match.options.cardGoals.map(String) : null;
+  if (!goals && n === 1) {
+    const winner = match.teams.find(tm => tm.winner);
+    const last = [...match.events].reverse().find(e => e.type === 'line' || e.type === 'card');
+    if (winner && last?.type === 'line' && last.team === winner.id && last.t >= match.durationMs - 2000 && last.value) goals = [`lines:${last.value}`];
+  }
+  if (!goals?.length) return null;
+  const text = goals.map(g => g === 'full' ? String(t.optValue.full) : optionValue('', g, t));
+  if (n === 1) return text[0];
+  return new Set(text).size === 1 ? t.cardsEach(n, text[0]) : `${optionValue('', win, t)}（${text.join(' → ')}）`;
+}
+
 export function MatchDetail() {
   const { id } = useParams();
   const { t } = useLang();
@@ -99,7 +120,9 @@ export function MatchView({ id, compact = false }: { id: string; compact?: boole
   const winners = match.teams.filter(tm => tm.winner);
   const names = (ids: string[]) => ids.map(i => teamName(i, lang)).join(lang === 'zh' ? '、' : ', ');
   // only show options that were actually switched on or have a value worth reading
-  const options = Object.entries(match.options).filter(([, v]) => v !== false);
+  const win = winCondition(match, t);
+  const options = Object.entries(match.options).filter(([k, v]) => v !== false && k !== 'cardGoals')
+    .map(([k, v]) => [k, k === 'winCondition' && win ? win : optionValue(k, v, t)] as const);
 
   return (
     <div className={compact ? 'match-view compact' : 'match-view'}>
@@ -172,7 +195,7 @@ export function MatchView({ id, compact = false }: { id: string; compact?: boole
         <h2>{t.settings}</h2>
         <dl>
           {options.map(([k, v]) => (
-            <div key={k}><dt>{t.opt[k] ?? k}</dt><dd>{optionValue(k, v, t)}</dd></div>
+            <div key={k}><dt>{t.opt[k] ?? k}</dt><dd>{v}</dd></div>
           ))}
           <div><dt>{t.mod}</dt><dd>{match.modVersion} (MC {match.mcVersion})</dd></div>
           <div><dt>{t.seed}</dt><dd className="mono">{[...new Set(match.boards.map(b => b.seed))].join(', ')}</dd></div>

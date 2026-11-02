@@ -144,7 +144,7 @@ export async function getMatch(db: DB, id: string) {
     teams: teams.get(id) ?? [],
     boards: bs.map(b => ({
       id: b.id, seed: b.seed, teams: b.teams,
-      cells: cells.filter(c => c.boardId === b.id).map(({ boardId, ...c }) => c),
+      cells: cells.filter(c => c.boardId === b.id).map(({ boardId, count, ...c }) => count === null ? c : { ...c, count }),
     })),
     events: events.map(e => ({
       t: e.tMs, type: e.type, team: e.teamId, player: e.playerUuid, objectiveId: e.objectiveId, value: e.value,

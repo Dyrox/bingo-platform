@@ -2,7 +2,8 @@
 
 export interface Player { uuid: string; name: string }
 export interface Team { id: string; items: number; lines: number; cards: number; winner: boolean; players: Player[] }
-export interface Cell { x: number; y: number; objectiveId: string; tier: string | null; completedBy: string[] }
+/** `count`: how many the goal asks for on this card (YAB rolls it per card), when more than 1. */
+export interface Cell { x: number; y: number; objectiveId: string; tier: string | null; completedBy: string[]; count?: number }
 export interface Board { id: string; seed: string; teams: string[]; cells: Cell[] }
 
 export interface MatchSummary {

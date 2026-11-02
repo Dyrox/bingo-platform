@@ -117,4 +117,6 @@ export const boardCells = pgTable("board_cells", {
   objectiveId: text("objective_id").notNull(),
   tier: text("tier"),
   completedBy: text("completed_by").array().notNull().default([]),
+  // how many the goal asks for on this card (YAB rolls "collect 4–32 rotten flesh" per card); null = 1 or unknown
+  count: integer("count"),
 }, t => [primaryKey({ columns: [t.boardId, t.x, t.y] })]);

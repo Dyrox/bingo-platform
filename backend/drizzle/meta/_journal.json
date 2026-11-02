@@ -50,6 +50,13 @@
       "when": 1793652834901,
       "tag": "0006_winner_from_last_line",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793653377080,
+      "tag": "0007_cell_count",
+      "breakpoints": true
     }
   ]
 }

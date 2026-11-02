@@ -74,9 +74,15 @@ export function TeamCard({ team, board, goals, version, highlight, frame, finish
                 <GoalIcon goal={goal} version={version} size="100%" />
               </span>
               {starred(goal) && <img className="tile-deco" src="/yab/image_frame_advancement.png" alt="" />}
+              {cell.count && (
+                // drawn like a stack size (GuiGraphics.itemDecorations): white, shadow #3f3f3f, right edge at
+                // item x + 17 (= the tile's right edge), top at item y + 9
+                <McText text={String(cell.count)} color="#ffffff" shadow shadowColor="#3f3f3f" unit={UNIT} className="tile-count" />
+              )}
               <span className="tile-tip" role="tooltip">
                 <b>{name}</b>
                 {tier && <span className="tip-tier" style={{ color: `var(--t${tier})` }}>{tier}</span>}
+                {cell.count && <span>{t.countHere(cell.count)}</span>}
                 <span className={got ? 'tip-got' : 'tip-miss'}>{got ? '✔ ' + t.got : '✘ ' + t.missed}</span>
                 {others.length > 0 && <span className="tip-others">{t.alsoBy}{others.map(o => teamName(o, lang)).join(sep)}</span>}
               </span>

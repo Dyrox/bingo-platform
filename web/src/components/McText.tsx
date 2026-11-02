@@ -47,8 +47,8 @@ function fit(widths: number[], text: string, maxWidth: number) {
  * font pixel in CSS (e.g. a % of the card width), so the text scales with whatever it sits on.
  * Characters the bitmap font lacks (e.g. Chinese) fall back to a regular font.
  */
-export function McText({ text, color, unit, maxWidth = 1000, shadow = false, className, style }: {
-  text: string; color: string; unit: string; maxWidth?: number; shadow?: boolean;
+export function McText({ text, color, unit, maxWidth = 1000, shadow = false, shadowColor = 'rgba(0,0,0,.35)', className, style }: {
+  text: string; color: string; unit: string; maxWidth?: number; shadow?: boolean; shadowColor?: string;
   className?: string; style?: React.CSSProperties;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
@@ -87,12 +87,12 @@ export function McText({ text, color, unit, maxWidth = 1000, shadow = false, cla
         return layer;
       };
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      if (shadow) ctx.drawImage(tint('rgba(0,0,0,.35)'), 1, 1);
+      if (shadow) ctx.drawImage(tint(shadowColor), 1, 1);
       ctx.drawImage(tint(color), 0, 0);
       setSize({ w: canvas.width, h: canvas.height });
     });
     return () => { live = false; };
-  }, [text, color, maxWidth, shadow, ascii]);
+  }, [text, color, maxWidth, shadow, shadowColor, ascii]);
 
   if (!ascii) {
     return <span className={'mc-text-fallback ' + (className ?? '')} style={{ color, fontSize: `calc(${unit} * 8)`, ...style }}>{text}</span>;
