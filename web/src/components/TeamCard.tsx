@@ -25,9 +25,11 @@ const starred = (g?: Goal) => !!g && (g.c === 'advancement' || (g.c === 'challen
  * One team's view of its card, drawn like the mod's end-of-game screen.
  * With `frame` (replay), it shows what every team held at that moment instead of the final result.
  */
-export function TeamCard({ team, board, goals, version, highlight, frame, finished = true }: {
+export function TeamCard({ team, board, goals, version, highlight, frame, finished = true, modes = [], hiddenTiers = false, tracksSeen = false }: {
   team: Team; board: Board; goals: Goals; version: string; highlight?: string | null;
   frame?: ReplayFrame | null; finished?: boolean;
+  /** YAB's game modes; with `tracksSeen` (the timeline has "seen" entries), a replay hides undiscovered tiles */
+  modes?: string[]; hiddenTiers?: boolean; tracksSeen?: boolean;
 }) {
   const { lang, t } = useLang();
   const style = cardStyle(team.id);
@@ -67,22 +69,31 @@ export function TeamCard({ team, board, goals, version, highlight, frame, finish
           const got = by.includes(team.id);
           const others = by.filter(id => id !== team.id);
           const tier = cell.tier ?? goal?.t;
+          // YAB's CardViewService.getTileState: in Lockout, a tile another team captured is locked for this one;
+          // in Hidden Items, a tile stays a "?" until the team has seen it, and everything shows once the game is over
+          const locked = modes.includes('lockout') && others.length > 0 && !got;
+          const hidden = modes.includes('hidden_items') && tracksSeen && !!frame && !finished
+            && !got && !frame.seen.get(team.id)?.has(cell.objectiveId);
+          const hiddenImage = `/yab/image_hidden${hiddenTiers && tier ? '_' + tier.toLowerCase() : ''}.png`;
           return (
             <div key={i} className={'tile' + (highlight === cell.objectiveId ? ' flash' : '')} tabIndex={0} aria-label={name}
               style={{ left: pctX(12 + x * 20), top: pctY(22 + y * 20), width: pctX(18), height: pctY(18), background: got ? ACHIEVED : undefined }}>
               <span className="tile-item">
-                <GoalIcon goal={goal} version={version} size="100%" />
+                {hidden ? <img className="ico" src={hiddenImage} alt="" /> : <GoalIcon goal={goal} version={version} size="100%" />}
               </span>
-              {starred(goal) && <img className="tile-deco" src="/yab/image_frame_advancement.png" alt="" />}
-              {cell.count && (
+              {!hidden && starred(goal) && <img className="tile-deco" src="/yab/image_frame_advancement.png" alt="" />}
+              {locked && <img className="tile-deco" src="/yab/image_frame_locked.png" alt="" />}
+              {!hidden && cell.count && (
                 // drawn like a stack size (GuiGraphics.itemDecorations): white, shadow #3f3f3f, right edge at
                 // item x + 17 (= the tile's right edge), top at item y + 9
                 <McText text={String(cell.count)} color="#ffffff" shadow shadowColor="#3f3f3f" unit={UNIT} className="tile-count" />
               )}
               <span className="tile-tip" role="tooltip">
-                <b>{name}</b>
-                {tier && <span className="tip-tier" style={{ color: `var(--t${tier})` }}>{tier}</span>}
-                {cell.count && <span>{t.countHere(cell.count)}</span>}
+                <b>{hidden ? '???' : name}</b>
+                {tier && (!hidden || hiddenTiers) && <span className="tip-tier" style={{ color: `var(--t${tier})` }}>{tier}</span>}
+                {hidden && <span className="muted">{t.hiddenTile}</span>}
+                {!hidden && cell.count && <span>{t.countHere(cell.count)}</span>}
+                {locked && <span>🔒 {t.lockedTile(others.map(o => teamName(o, lang)).join(sep))}</span>}
                 <span className={got ? 'tip-got' : 'tip-miss'}>{got ? '✔ ' + t.got : '✘ ' + t.missed}</span>
                 {others.length > 0 && <span className="tip-others">{t.alsoBy}{others.map(o => teamName(o, lang)).join(sep)}</span>}
               </span>

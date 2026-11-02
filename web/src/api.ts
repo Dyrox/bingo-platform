@@ -18,6 +18,8 @@ export interface MatchSummary {
   source: 'reporter' | 'yab-stats';
   /** an import that only knows some of the players (a client's bingo.db has just its own team) */
   partial: boolean;
+  /** YAB's game modes: lockout, inventory, hidden_items, consume_items */
+  modes: string[];
   /** "doesn't count": still listed, left out of every statistic */
   excluded: boolean;
   teams: Team[];
@@ -26,7 +28,8 @@ export interface MatchSummary {
 /** Timeline entry from bingo-reporter; t is in-game time in ms. */
 export interface MatchEvent {
   t: number;
-  type: 'goal' | 'lost' | 'line' | 'card';
+  /** seen: in Hidden Items mode, when the team first saw that tile (not shown in the timeline) */
+  type: 'goal' | 'lost' | 'line' | 'card' | 'seen';
   team: string;
   player: string | null;
   objectiveId: string | null;
@@ -133,3 +136,6 @@ export const setMatchExcluded = (id: string, excluded: boolean) => send<{ ok: tr
 export const deleteMatch = (id: string) => send<{ ok: true }>('DELETE', `/api/matches/${encodeURIComponent(id)}`);
 export const bulkMatches = (ids: string[], action: 'exclude' | 'include' | 'delete') => send<{ done: number; skipped: number }>('POST', '/api/matches/bulk', { ids, action });
 export const revokeUploadKey = (id: string) => send<{ ok: true }>('DELETE', `/api/me/keys/${id}`);
+
+/** Timeline entries worth listing; "seen" only drives the replay of hidden tiles. */
+export const listedEvents = (m: Match) => m.events.filter(e => e.type !== 'seen');

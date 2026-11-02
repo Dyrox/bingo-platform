@@ -17,7 +17,7 @@ const G3 = "11111111-0000-4000-8000-000000000003";
 
 const OPTIONS = JSON.stringify({
   winCondition: { type: "cards", cards: 1 }, endGameWhen: { type: "first_win" }, stalemateBehavior: "END_GAME", timeLimit: "PT45M",
-  cards: [{ goal: { type: "lines", lines: 3 }, isLockoutMode: true }], isPvpEnabled: false, isNightVision: true, spawnDistance: 25,
+  cards: [{ goal: { type: "lines", lines: 3 }, isLockoutMode: true, isConsumeItemsMode: true }], isPvpEnabled: false, isNightVision: true, spawnDistance: 25,
 });
 
 type Row = { id: string; players: number; draw?: boolean; forfeit?: boolean; teams: [string, boolean][]; people: [string, string, string, number][] };
@@ -69,7 +69,7 @@ describe("importing YAB's bingo.db", () => {
     const m = await (await app.request(`/api/matches/${G1}`)).json();
     expect(m).toMatchObject({ source: "yab-stats", partial: false, durationMs: 2_400_000, boards: [], events: [], uploader: "Dyrox" });
     expect(m.teams.map((t: any) => [t.id, t.items, t.winner, t.players[0].name])).toEqual([["bingo_red", 12, true, "Dyrox2333"], ["bingo_blue", 7, false, "FriendMC"]]);
-    expect(m.options).toMatchObject({ winCondition: "cards:1", endWhen: "first_win", stalemate: "end_game", goal: "lines:3", mode: "lockout", timeLimitSeconds: 2700, nightVision: true, pvp: false });
+    expect(m.options).toMatchObject({ winCondition: "cards:1", endWhen: "first_win", stalemate: "end_game", cardGoals: ["lines:3"], mode: "lockout,consume_items", timeLimitSeconds: 2700, nightVision: true, pvp: false });
     expect((await profile(FRIEND)).allTime).toMatchObject({ games: 1, losses: 1 });
   });
 

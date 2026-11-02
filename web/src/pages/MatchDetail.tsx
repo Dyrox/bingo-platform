@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
-import { deleteMatch, getMatch, getMatchAccess, NotFound, setMatchExcluded, type Match, type MatchEvent } from '../api';
+import { deleteMatch, getMatch, getMatchAccess, listedEvents, NotFound, setMatchExcluded, type Match, type MatchEvent } from '../api';
+import { ModeTags } from '../components/ModeTags';
 import { useAccount } from '../account';
 import { announceMatchesChanged } from '../changes';
 import { Status } from '../components/Layout';
@@ -34,7 +35,8 @@ function winCondition(match: Match, t: Strings): string | null {
   const win = String(match.options.winCondition ?? '');
   if (!win.startsWith('cards:')) return null;
   const n = Number(win.split(':')[1]);
-  let goals = Array.isArray(match.options.cardGoals) ? match.options.cardGoals.map(String) : null;
+  let goals = Array.isArray(match.options.cardGoals) ? match.options.cardGoals.map(String)
+    : typeof match.options.goal === 'string' ? [match.options.goal] : null;
   if (!goals && n === 1) {
     const winner = match.teams.find(tm => tm.winner);
     const last = [...match.events].reverse().find(e => e.type === 'line' || e.type === 'card');
@@ -121,14 +123,14 @@ export function MatchView({ id, compact = false }: { id: string; compact?: boole
   const names = (ids: string[]) => ids.map(i => teamName(i, lang)).join(lang === 'zh' ? '、' : ', ');
   // only show options that were actually switched on or have a value worth reading
   const win = winCondition(match, t);
-  const options = Object.entries(match.options).filter(([k, v]) => v !== false && k !== 'cardGoals')
+  const options = Object.entries(match.options).filter(([k, v]) => v !== false && k !== 'cardGoals' && !(k === 'goal' && win))
     .map(([k, v]) => [k, k === 'winCondition' && win ? win : optionValue(k, v, t)] as const);
 
   return (
     <div className={compact ? 'match-view compact' : 'match-view'}>
       {compact && <Link to={`/matches/${match.id}`} className="open-full">{t.openFull} ↗</Link>}
       <div className="match-head">
-        <h1>{formatDate(match.endedAt, lang)}{match.excluded && <span className="src-tag excluded">{t.excludedTag}</span>}</h1>
+        <h1>{formatDate(match.endedAt, lang)}{match.excluded && <span className="src-tag excluded">{t.excludedTag}</span>}<ModeTags modes={match.modes ?? []} /></h1>
         <p className="muted">
           {t.duration} {formatDuration(match.durationMs)} · {winners.length ? `${t.winner}: ${names(winners.map(w => w.id))}` : t.draw}
         </p>
@@ -169,7 +171,7 @@ export function MatchView({ id, compact = false }: { id: string; compact?: boole
           {/* rebuilt from the server's logs when they were imported too; no replay, as there's no card */}
           {match.events.length > 0 && goals && (
             <section className="panel timeline-panel">
-              <h2>{t.timeline}<span className="muted count-badge"> · {match.events.length}</span></h2>
+              <h2>{t.timeline}<span className="muted count-badge"> · {listedEvents(match).length}</span></h2>
               <Timeline match={match} goals={goals.goals} version={goals.version} onFocusGoal={() => {}} />
             </section>
           )}
@@ -179,13 +181,15 @@ export function MatchView({ id, compact = false }: { id: string; compact?: boole
         {goals
           ? match.teams.map(tm => <TeamCard key={tm.id} team={tm} board={cardFor(tm.id)} goals={goals.goals} version={goals.version}
               highlight={focus?.team === tm.id ? focus.objectiveId : null}
-              frame={frame} finished={replay.t === null || replay.t >= end} />)
+              frame={frame} finished={replay.t === null || replay.t >= end}
+              modes={match.modes ?? []} hiddenTiers={match.options.showHiddenTiers === true}
+              tracksSeen={match.events.some(e => e.type === 'seen')} />)
           : <Status>{t.loading}</Status>}
       </section>
 
       {goals && (
         <section className="panel timeline-panel">
-          <h2>{t.timeline}{match.events.length > 0 && <span className="muted count-badge"> · {match.events.length}</span>}</h2>
+          <h2>{t.timeline}{listedEvents(match).length > 0 && <span className="muted count-badge"> · {listedEvents(match).length}</span>}</h2>
           <Timeline match={match} goals={goals.goals} version={goals.version} onFocusGoal={setFocus} now={replay.t} />
         </section>
       )}

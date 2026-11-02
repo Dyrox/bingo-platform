@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import type { Match, MatchEvent } from '../api';
+import { listedEvents, type Match, type MatchEvent } from '../api';
 import { avatarUrl } from '../format';
 import { prettyId, type Goals } from '../goals';
 import { useLang } from '../i18n';
@@ -23,7 +23,8 @@ export function Timeline({ match, goals, version, onFocusGoal, now = null }: {
 }) {
   const { lang, t } = useLang();
   const list = useRef<HTMLOListElement>(null);
-  const current = now === null ? -1 : match.events.findLastIndex(e => e.t <= now);
+  const events = listedEvents(match);
+  const current = now === null ? -1 : events.findLastIndex(e => e.t <= now);
   useEffect(() => {
     // scroll inside the timeline only, never the page
     const box = list.current, row = box?.children[current] as HTMLElement | undefined;
@@ -36,11 +37,11 @@ export function Timeline({ match, goals, version, onFocusGoal, now = null }: {
     return g ? (lang === 'zh' ? g.z ?? g.n : g.n) : prettyId(id);
   };
 
-  if (!match.events.length) return <p className="muted timeline-empty">{t.noTimeline}</p>;
+  if (!events.length) return <p className="muted timeline-empty">{t.noTimeline}</p>;
 
   return (
     <ol className="timeline" ref={list} onMouseLeave={() => onFocusGoal(null)}>
-      {match.events.map((e, i) => {
+      {events.map((e, i) => {
         const who = e.player && names.get(e.player);
         const actor = (
           <span className="tl-actor">

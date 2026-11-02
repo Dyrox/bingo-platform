@@ -21,7 +21,7 @@ const Board = z.object({
 
 const Event = z.object({
   t: z.number().int().min(0).max(7 * 24 * 3600 * 1000),
-  type: z.enum(["goal", "lost", "line", "card"]),
+  type: z.enum(["goal", "lost", "line", "card", "seen"]),
   team: z.string(),
   player: z.uuid().nullable().optional(),
   objectiveId: z.string().min(1).max(200).nullable().optional(),

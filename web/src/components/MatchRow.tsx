@@ -2,6 +2,7 @@ import { Link } from 'react-router';
 import type { MatchSummary } from '../api';
 import { formatDate, formatDuration } from '../format';
 import { useLang } from '../i18n';
+import { ModeTags } from './ModeTags';
 import { teamColor, teamName } from '../teams';
 
 /** A match in a list. `highlight` marks the team of the player whose page this is. */
@@ -14,7 +15,7 @@ export function MatchRow({ m, highlight, selected, onSelect }: { m: MatchSummary
     <Wrap to={`/matches/${m.id}`} onSelect={onSelect} className={'match-row' + (result ? ` ${result}` : '') + (onSelect ? ' selectable' : '') + (selected ? ' selected' : '')}>
       {onSelect && <input type="checkbox" className="row-check" checked={!!selected} readOnly tabIndex={-1} />}
       <div className="match-when">
-        <span>{formatDate(m.endedAt, lang)}{m.source === 'yab-stats' && <span className="src-tag" title={t.importedTip}>{t.imported}</span>}{m.excluded && <span className="src-tag excluded">{t.excludedTag}</span>}</span>
+        <span>{formatDate(m.endedAt, lang)}{m.source === 'yab-stats' && <span className="src-tag" title={t.importedTip}>{t.imported}</span>}{m.excluded && <span className="src-tag excluded">{t.excludedTag}</span>}<ModeTags modes={m.modes ?? []} /></span>
         <span className="muted">{formatDuration(m.durationMs)}</span>
       </div>
       <div className="match-teams">

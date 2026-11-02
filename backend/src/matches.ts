@@ -102,6 +102,8 @@ const summary = (m: typeof matches.$inferSelect & { uploader: string }) => ({
   source: m.source,
   partial: m.partial,
   excluded: m.excluded,
+  // YAB's game modes ("lockout", "inventory", "hidden_items", "consume_items"), from options.mode
+  modes: typeof (m.options as any)?.mode === "string" && (m.options as any).mode ? String((m.options as any).mode).split(",") : [],
 });
 
 /** Newest first. `before` is the endedAt of the last match on the previous page. */

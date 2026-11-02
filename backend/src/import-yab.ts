@@ -39,11 +39,14 @@ function convertOptions(raw: string): Record<string, unknown> {
   // java Duration as ISO-8601 ("PT45M") when a time limit was set
   const tl = typeof o.timeLimit === "string" && /^PT(?:(\d+)H)?(?:(\d+)M)?(?:([\d.]+)S)?$/.exec(o.timeLimit);
   if (tl) out.timeLimitSeconds = Number(tl[1] ?? 0) * 3600 + Number(tl[2] ?? 0) * 60 + Math.round(Number(tl[3] ?? 0));
-  const card = o.cards?.[0];
-  if (card?.goal?.type === "lines") out.goal = `lines:${card.goal.lines}`;
-  else if (card?.goal?.type === "items") out.goal = `items:${card.goal.items}`;
-  const modes = [card?.isLockoutMode && "lockout", card?.isInventoryMode && "inventory", card?.isHiddenItemsMode && "hidden_items"].filter(Boolean);
+  // what finishes each card, and the first card's modes, as bingo-reporter sends them
+  const cards: any[] = Array.isArray(o.cards) ? o.cards : [];
+  const goals = cards.map(c => c?.goal?.type === "lines" ? `lines:${c.goal.lines}` : c?.goal?.type === "items" ? `items:${c.goal.items}` : null);
+  if (goals.length && goals.every(Boolean)) out.cardGoals = goals;
+  const card = cards[0];
+  const modes = [card?.isLockoutMode && "lockout", card?.isInventoryMode && "inventory", card?.isHiddenItemsMode && "hidden_items", card?.isConsumeItemsMode && "consume_items"].filter(Boolean);
   if (modes.length) out.mode = modes.join(",");
+  if (card?.isHiddenItemsMode && typeof o.showHiddenTiers === "boolean") out.showHiddenTiers = o.showHiddenTiers;
   const flags: [string, string][] = [["isPvpEnabled", "pvp"], ["isElytra", "elytra"], ["isNightVision", "nightVision"], ["isKeepInventory", "keepInventory"],
     ["isUnlockRecipes", "unlockRecipes"], ["isPlayerKit", "playerKit"], ["isTeamKit", "teamKit"]];
   for (const [from, to] of flags) if (typeof o[from] === "boolean") out[to] = o[from];

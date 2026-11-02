@@ -97,7 +97,8 @@ export const boards = pgTable("boards", {
   teams: text("teams").array().notNull(),
 }, t => [index("boards_match_idx").on(t.matchId)]);
 
-// The round's timeline as bingo-reporter saw it: t is in-game time in ms; type is goal / lost / line / card.
+// The round's timeline as bingo-reporter saw it: t is in-game time in ms; type is goal / lost / line / card / seen
+// (seen: in Hidden Items mode, when the team first saw that tile).
 // Rounds uploaded before the reporter tracked this simply have none.
 export const matchEvents = pgTable("match_events", {
   matchId: uuid("match_id").notNull().references(() => matches.id, { onDelete: "cascade" }),
