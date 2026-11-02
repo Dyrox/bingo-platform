@@ -6,7 +6,7 @@ import { avatarUrl, formatDate } from '../format';
 import { useLang } from '../i18n';
 import { useMe } from '../me';
 import { useAccount } from '../account';
-import { LinkFlow } from './AccountPage';
+import { LinkFlow, ReporterDownload } from './AccountPage';
 
 function PlayerGrid() {
   const { lang, t } = useLang();
@@ -53,6 +53,7 @@ export function MePage() {
         {account.discord
           ? <a className="discord-btn" href="/api/auth/discord">{t.loginDiscord}</a>
           : <p className="muted small">{t.discordOff}</p>}
+        <div className="login-extra"><ReporterDownload /></div>
       </div>
     );
   }

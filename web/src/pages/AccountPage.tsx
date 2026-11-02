@@ -51,7 +51,7 @@ export function LinkFlow({ onDone }: { onDone: () => void }) {
 const megabytes = (n: number) => `${(n / 1024 / 1024).toFixed(n < 1024 * 1024 ? 2 : 1)} MB`;
 
 /** Download for the latest bingo-reporter jar that CI built and deployed with this site. */
-function ReporterDownload() {
+export function ReporterDownload() {
   const { t, lang } = useLang();
   const R = t.reporter;
   const [build, setBuild] = useState<ReporterBuild | null | 'none'>(null);
@@ -73,6 +73,7 @@ function ReporterDownload() {
           </div>
           <p className="muted small">{R.needs(build.minecraft, build.yab)}</p>
           <code className="sha muted">sha256 {build.sha256}</code>
+          <a className="small" href="https://github.com/Dyrox/bingo-platform/releases" target="_blank" rel="noreferrer">{R.allVersions} ↗</a>
         </>
       )}
       <ol className="reporter-steps">{R.steps.map(s => <li key={s}>{s}</li>)}</ol>
@@ -144,6 +145,7 @@ export function AccountPage() {
         {account.discord
           ? <a className="discord-btn" href="/api/auth/discord">{t.loginDiscord}</a>
           : <p className="muted small">{t.discordOff}</p>}
+        <div className="login-extra"><ReporterDownload /></div>
       </div>
     );
   }

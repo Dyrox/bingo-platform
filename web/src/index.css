@@ -205,6 +205,7 @@ nav a.active, nav a:hover { color: var(--fg); background: var(--chip) }
 .login-link { text-decoration: none; font-weight: 600; white-space: nowrap }
 .round { border-radius: 50% !important }
 .login-box { max-width: 520px; margin: 40px auto; text-align: center }
+.login-extra { margin-top: 32px; text-align: left }
 .home-link { display: flex; justify-content: center; margin-top: 14px }
 .home-link .link-flow { align-items: center }
 .discord-btn { display: inline-block; margin-top: 12px; background: #5865f2; color: #fff; text-decoration: none; font-weight: 700; padding: 10px 22px; border-radius: 8px }

@@ -1,6 +1,6 @@
 name: Test, build and deploy
 
-# Every push to main: test → build the reporter jar → build the site+API image (jar included) → deploy to the VPS.
+# Every push to main: test → build the reporter jar → GitHub Release + site+API image (jar included) → deploy to the VPS.
 # Pull requests only run the tests and the reporter build.
 on:
   push:
@@ -77,6 +77,41 @@ jobs:
         with:
           name: downloads
           path: downloads/
+
+  release:
+    # every main push also publishes the jar as a GitHub Release (reporter-v0.1.<run>)
+    runs-on: ubuntu-latest
+    needs: [test, reporter]
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: downloads
+          path: downloads/
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SUBJECT: ${{ github.event.head_commit.message }}
+        shell: bash
+        run: |
+          meta() { python3 -c "import json,sys; print(json.load(open('downloads/reporter.json'))[sys.argv[1]])" "$1"; }
+          version=$(meta version); file=$(meta file)
+          {
+            echo "**Changes:** $(printf '%s' "$SUBJECT" | head -1)"
+            echo
+            echo "Needs Minecraft $(meta minecraft) · Fabric · Yet Another Bingo $(meta yab)+"
+            echo
+            echo "1. Put \`$file\` in \`.minecraft/mods\` on the computer that hosts the game (next to YAB)."
+            echo "2. Start the game once; it creates \`config/bingo-reporter.json\`."
+            echo "3. Create an upload key at https://bingo.dyrox.cat/account and put it in \`key\`."
+            echo
+            echo "sha256 \`$(meta sha256)\`"
+          } > notes.md
+          gh release create "reporter-v$version" "downloads/$file" downloads/reporter.json \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title "bingo-reporter $version" --notes-file notes.md --latest
 
   build:
     runs-on: ubuntu-latest
