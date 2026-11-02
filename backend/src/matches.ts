@@ -19,8 +19,9 @@ export async function saveMatch(db: DB, m: MatchUpload, key: typeof uploadKeys.$
   let created = true;
   try {
     await db.transaction(async tx => {
-      const [prev] = await tx.select({ uploaderId: matches.uploaderId }).from(matches).where(eq(matches.id, m.id));
-      if (prev && prev.uploaderId !== key.userId) throw new ConflictError("this round was uploaded by another user");
+      const [prev] = await tx.select({ uploaderId: matches.uploaderId, source: matches.source }).from(matches).where(eq(matches.id, m.id));
+      // an import from YAB's bingo.db has no cards or timeline: the reporter's upload always replaces it
+      if (prev && prev.source === "reporter" && prev.uploaderId !== key.userId) throw new ConflictError("this round was uploaded by another user");
       if (prev) {
         // teams, players, boards and cells go with it (ON DELETE CASCADE)
         await tx.delete(matches).where(eq(matches.id, m.id));
@@ -84,6 +85,8 @@ const summary = (m: typeof matches.$inferSelect & { uploader: string }) => ({
   id: m.id, modVersion: m.modVersion, mcVersion: m.mcVersion,
   startedAt: m.startedAt.toISOString(), endedAt: m.endedAt.toISOString(), durationMs: m.durationMs,
   uploader: m.uploader,
+  source: m.source,
+  partial: m.partial,
 });
 
 /** Newest first. `before` is the endedAt of the last match on the previous page. */

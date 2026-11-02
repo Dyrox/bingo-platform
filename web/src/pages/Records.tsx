@@ -65,6 +65,7 @@ export function Records() {
                   <span className={`result ${result}`}>{t.result[result]}</span>
                   <span className="record-main">
                     <span className="record-team">
+                      {m.source === 'yab-stats' && <span className="src-tag" title={t.importedTip}>{t.imported}</span>}
                       {mine && <span className="dot" style={{ background: teamColor(mine.id) }} />}
                       {mine ? teamName(mine.id, lang) : ''}
                       {rivals.length > 0 && <span className="muted"> {t.vsLabel} {rivals.map(r => r.players.map(pl => pl.name).join(', ') || teamName(r.id, lang)).join(' · ')}</span>}

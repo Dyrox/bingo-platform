@@ -3,16 +3,19 @@ import { Link, useParams } from 'react-router';
 import { getMatch, NotFound, type Match, type MatchEvent } from '../api';
 import { Status } from '../components/Layout';
 import { TeamCard } from '../components/TeamCard';
+import { PlayerLink, Score } from '../components/Teams';
 import { clock, Timeline } from '../components/Timeline';
 import { formatDate, formatDuration } from '../format';
 import { useGoals } from '../goals';
 import { useLang, type Strings } from '../i18n';
-import { teamName } from '../teams';
+import { teamColor, teamName } from '../teams';
 import { frameAt, replayEnd, SPEEDS, useReplay } from '../replay';
 
 // option values as bingo-reporter sends them, e.g. "cards:1", "teams_win:2", "end_game"
-function optionValue(key: string, v: unknown, t: Strings) {
+function optionValue(key: string, v: unknown, t: Strings): string {
   if (typeof v === 'boolean') return v ? t.yes : t.no;
+  // several modes at once, e.g. "lockout,hidden_items"
+  if (key === 'mode' && typeof v === 'string') return v.split(',').map(m => optionValue('', m, t)).join(' · ');
   if (key === 'timeLimitSeconds' && typeof v === 'number') return formatDuration(v * 1000);
   const [name, n] = String(v).split(':');
   const known = t.optValue[String(v)] ?? t.optValue[name];
@@ -90,6 +93,21 @@ export function MatchView({ id, compact = false }: { id: string; compact?: boole
         </div>
       )}
 
+      {match.source === 'yab-stats' ? (
+        // imported from bingo.db: no card to draw, just who played and how it went
+        <>
+          <p className="panel imported-note">{t.importedNote}{match.partial && <> {t.partialNote}</>}</p>
+          <div className="plain-teams">
+            {match.teams.map(tm => (
+              <div key={tm.id} className={'plain-team' + (tm.winner ? ' won' : '')} style={{ '--team': teamColor(tm.id) } as React.CSSProperties}>
+                <div className="plain-team-head"><span className="dot" />{teamName(tm.id, lang)}{tm.winner && <span className="badge win">🏆 {t.winner}</span>}</div>
+                {tm.players.length > 0 && <Score team={tm} />}
+                <div className="team-players">{tm.players.map(p => <PlayerLink key={p.uuid} {...p} />)}</div>
+              </div>
+            ))}
+          </div>
+        </>
+      ) : <>
       <section className="cards-panel" aria-label={t.cards_}>
         {goals
           ? match.teams.map(tm => <TeamCard key={tm.id} team={tm} board={cardFor(tm.id)} goals={goals.goals} version={goals.version}
@@ -104,6 +122,7 @@ export function MatchView({ id, compact = false }: { id: string; compact?: boole
           <Timeline match={match} goals={goals.goals} version={goals.version} onFocusGoal={setFocus} now={replay.t} />
         </section>
       )}
+      </>}
 
       <section className="meta">
         <h2>{t.settings}</h2>

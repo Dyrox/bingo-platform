@@ -6,6 +6,10 @@ import { z } from "zod";
 import type { DB } from "./db/client.ts";
 import { linkCodes, players, sessions, uploadKeys, users } from "./db/schema.ts";
 import { createKeyForUser, findKey } from "./keys.ts";
+import { importYabGames, readYabStats } from "./import-yab.ts";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 export interface AuthConfig {
   discordClientId?: string;
@@ -151,6 +155,30 @@ export function registerAuthRoutes(app: Hono<any>, db: DB, cfg: AuthConfig) {
     if (!id.success) return c.json({ error: "not_found" }, 404);
     await db.update(uploadKeys).set({ revokedAt: new Date() }).where(and(eq(uploadKeys.id, id.data), eq(uploadKeys.userId, user.id)));
     return c.json({ ok: true });
+  }));
+
+  /**
+   * Import YAB's own history: the bingo.db file from config/yet-another-minecraft-bingo/, sent as the
+   * "file" field of a multipart form. Results only (no cards); see import-yab.ts for the rules.
+   */
+  app.post("/api/me/import/yab", c => withUser(c, async user => {
+    const body = await c.req.parseBody().catch(() => ({} as Record<string, unknown>));
+    const file = body.file;
+    if (!(file instanceof File)) return c.json({ error: "no_file" }, 400);
+    if (file.size > 50 * 1024 * 1024) return c.json({ error: "file_too_large" }, 413);
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    if (new TextDecoder().decode(bytes.slice(0, 15)) !== "SQLite format 3") return c.json({ error: "not_sqlite" }, 400);
+
+    const dir = mkdtempSync(join(tmpdir(), "yab-import-"));
+    try {
+      const path = join(dir, "bingo.db");
+      writeFileSync(path, bytes);
+      let games;
+      try { games = readYabStats(path); } catch (e) { return c.json({ error: "not_yab", message: (e as Error).message }, 400); }
+      return c.json(await importYabGames(db, user.id, games));
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   }));
 
   /**

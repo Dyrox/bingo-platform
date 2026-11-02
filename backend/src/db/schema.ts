@@ -58,6 +58,11 @@ export const matches = pgTable("matches", {
   endedAt: timestamp("ended_at", { withTimezone: true }).notNull(),
   durationMs: integer("duration_ms").notNull(),
   options: jsonb("options").notNull().default({}),
+  // "reporter": uploaded by bingo-reporter (cards, timeline); "yab-stats": imported from YAB's own bingo.db
+  // (results only, no cards)
+  source: text("source").notNull().default("reporter"),
+  // an import that only knows some of the players: a client's bingo.db records just its own team
+  partial: boolean("partial").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, t => [index("matches_ended_at_idx").on(t.endedAt)]);
 

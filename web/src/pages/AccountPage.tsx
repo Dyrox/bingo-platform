@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
-import { createLinkCode, createUploadKey, getReporterBuild, logout, revokeUploadKey, unlinkPlayer, type ReporterBuild } from '../api';
+import { createLinkCode, createUploadKey, getReporterBuild, importYab, logout, revokeUploadKey, unlinkPlayer, type ImportResult, type ReporterBuild } from '../api';
 import { useAccount } from '../account';
 import { Status } from '../components/Layout';
 import { avatarUrl, formatDate } from '../format';
@@ -77,6 +77,40 @@ export function ReporterDownload() {
         </>
       )}
       <ol className="reporter-steps">{R.steps.map(s => <li key={s}>{s}</li>)}</ol>
+    </section>
+  );
+}
+
+/** Upload YAB's own bingo.db to bring in rounds played before the reporter (results only). */
+function YabImport() {
+  const { t } = useLang();
+  const Y = t.yabImport;
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<ImportResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const pick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // so choosing the same file again still triggers
+    if (!file) return;
+    setBusy(true); setResult(null); setError(null);
+    try { setResult(await importYab(file)); }
+    catch (err) { const code = (err as Error).message; setError(Y.errors[code] ?? `${t.error} (${code})`); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <section className="panel">
+      <h2>{Y.title}</h2>
+      <p className="muted small">{Y.what}</p>
+      <p className="muted small"><code>{Y.where}</code></p>
+      <p className="muted small">{Y.server}</p>
+      <label className={'pill file-pick' + (busy ? ' busy' : '')}>
+        {busy ? Y.uploading : Y.choose}
+        <input type="file" accept=".db,.sqlite,application/octet-stream" onChange={pick} disabled={busy} hidden />
+      </label>
+      {result && <p className="import-ok">✔ {Y.result(result)}</p>}
+      {error && <p className="error">{error}</p>}
     </section>
   );
 }
@@ -177,6 +211,7 @@ export function AccountPage() {
 
       <ReporterDownload />
       <Keys />
+      <YabImport />
     </>
   );
 }

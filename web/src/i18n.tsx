@@ -16,10 +16,12 @@ const strings = {
     opt: {
       winCondition: '胜利条件', endWhen: '结束条件', timeLimitSeconds: '时间限制', pvp: 'PvP', elytra: '鞘翅',
       nightVision: '夜视', keepInventory: '死亡不掉落', unlockRecipes: '解锁配方', playerKit: '玩家装备包', teamKit: '队伍装备包',
-      spawnDimension: '出生维度', spawnDistance: '出生距离', stalemate: '僵局处理',
+      spawnDimension: '出生维度', spawnDistance: '出生距离', stalemate: '僵局处理', goal: '获胜目标', mode: '模式',
     } as Record<string, string>,
     optValue: {
       cards: (n: number) => `完成 ${n} 张卡`, infinite: '无限', replace_goals: '替换目标',
+      lines: (n: number) => `${n} 条线`, items: (n: number) => n >= 25 ? '全卡（25 个物品）' : `${n} 个物品`,
+      lockout: '锁定模式', inventory: '背包模式', hidden_items: '隐藏物品',
       never: '不自动结束', first_win: '有队伍获胜即结束', teams_win: (n: number) => `${n} 队获胜后结束`, all_win: '所有队伍完成后结束',
       end_game: '结束对局', reroll_card: '重新抽卡', nothing: '不处理',
       'minecraft:overworld': '主世界', 'minecraft:the_nether': '下界', 'minecraft:the_end': '末地',
@@ -62,6 +64,19 @@ const strings = {
       done: (c: number, a: number) => `完成 ${c}/${a}`, missed: (m: number, a: number) => `错过 ${m}/${a}`, avg: '平均',
     },
     goalStat: (a: number, rate: number, avg: string | null) => `出现 ${a} 次 · 完成 ${rate}%` + (avg ? ` · 平均 ${avg}` : ''),
+    imported: '导入', importedTip: '从 YAB 的 bingo.db 导入：只有结果，没有棋盘和时间轴',
+    importedNote: '这局是从 YAB 自己的记录（bingo.db）导入的：只有胜负、物品数和设置，没有棋盘、回放和时间轴。',
+    partialNote: '这份记录只包含上传者那一队，其他队伍和玩家不在里面。',
+    yabImport: {
+      title: '导入 YAB 历史记录',
+      what: 'YAB 会把每局结果存在开房那台电脑（或服务器）上。导入后，你以前的胜负、物品数和游戏时长都会算进统计；没有棋盘和时间轴。已经有的对局会跳过，重复导入也没关系。',
+      where: '文件位置：.minecraft/config/yet-another-minecraft-bingo/bingo.db（Modrinth：实例 → 打开文件夹 → config；老版本叫 stats.db）',
+      server: '在别人服务器上玩的局，你电脑上只记了你自己那一队。找服务器主人要他那份 bingo.db 导入，就有所有队伍和玩家了。',
+      choose: '选择 bingo.db', uploading: '导入中…',
+      result: (r: { found: number; imported: number; replaced: number; skipped: number; partial: number }) =>
+        `文件里有 ${r.found} 局：新导入 ${r.imported} 局` + (r.replaced ? `，补全 ${r.replaced} 局` : '') + (r.skipped ? `，已存在跳过 ${r.skipped} 局` : '') + (r.partial ? `（其中 ${r.partial} 局只有部分玩家）` : '') + '。',
+      errors: { not_sqlite: '这不是 SQLite 文件。', not_yab: '这个文件里没有 YAB 的对局表，是不是选错文件了？', file_too_large: '文件太大了（上限 50 MB）。', no_file: '没有选文件。', not_logged_in: '请先登录。' } as Record<string, string>,
+    },
     pickMatch: '选一局查看详情', openFull: '打开完整页面', vsLabel: '对手',
     guide: {
       nav: '难度图鉴', title: 'Bingo 难度图鉴',
@@ -95,10 +110,12 @@ const strings = {
     opt: {
       winCondition: 'Win condition', endWhen: 'Ends when', timeLimitSeconds: 'Time limit', pvp: 'PvP', elytra: 'Elytra',
       nightVision: 'Night vision', keepInventory: 'Keep inventory', unlockRecipes: 'Unlock recipes', playerKit: 'Player kit', teamKit: 'Team kit',
-      spawnDimension: 'Spawn dimension', spawnDistance: 'Spawn distance', stalemate: 'Stalemate',
+      spawnDimension: 'Spawn dimension', spawnDistance: 'Spawn distance', stalemate: 'Stalemate', goal: 'Goal', mode: 'Mode',
     } as Record<string, string>,
     optValue: {
       cards: (n: number) => `${n} card${n === 1 ? '' : 's'}`, infinite: 'Infinite', replace_goals: 'Replace goals',
+      lines: (n: number) => `${n} line${n === 1 ? '' : 's'}`, items: (n: number) => n >= 25 ? 'Full card (25 items)' : `${n} items`,
+      lockout: 'Lockout', inventory: 'Inventory', hidden_items: 'Hidden items',
       never: 'Never', first_win: 'First team wins', teams_win: (n: number) => `${n} teams win`, all_win: 'All teams finish',
       end_game: 'End the game', reroll_card: 'Reroll the card', nothing: 'Nothing',
       'minecraft:overworld': 'Overworld', 'minecraft:the_nether': 'Nether', 'minecraft:the_end': 'The End',
@@ -141,6 +158,19 @@ const strings = {
       done: (c: number, a: number) => `done ${c}/${a}`, missed: (m: number, a: number) => `missed ${m}/${a}`, avg: 'avg',
     },
     goalStat: (a: number, rate: number, avg: string | null) => `seen ${a}× · ${rate}% done` + (avg ? ` · avg ${avg}` : ''),
+    imported: 'Imported', importedTip: 'Imported from YAB’s bingo.db: results only, no card or timeline',
+    importedNote: 'This round was imported from YAB’s own records (bingo.db): results, items and settings only, no card, replay or timeline.',
+    partialNote: 'This record only has the uploader’s own team; the other teams and players aren’t in it.',
+    yabImport: {
+      title: 'Import YAB history',
+      what: 'YAB saves every round on the computer (or server) that hosted it. Import it and your past wins, items and playtime count towards your stats; there are no cards or timelines. Rounds already here are skipped, so importing twice is fine.',
+      where: 'File: .minecraft/config/yet-another-minecraft-bingo/bingo.db (Modrinth: instance → open folder → config; older versions call it stats.db)',
+      server: 'Rounds on someone else’s server are only recorded for your own team on your computer. Ask the server owner for their bingo.db to get every team and player.',
+      choose: 'Choose bingo.db', uploading: 'Importing…',
+      result: (r: { found: number; imported: number; replaced: number; skipped: number; partial: number }) =>
+        `${r.found} rounds in the file: ${r.imported} imported` + (r.replaced ? `, ${r.replaced} completed` : '') + (r.skipped ? `, ${r.skipped} already here` : '') + (r.partial ? ` (${r.partial} with only some players)` : '') + '.',
+      errors: { not_sqlite: 'That isn’t an SQLite file.', not_yab: 'That file has no YAB match tables. Wrong file?', file_too_large: 'File too large (50 MB max).', no_file: 'No file chosen.', not_logged_in: 'Log in first.' } as Record<string, string>,
+    },
     pickMatch: 'Pick a match to see it here', openFull: 'Open full page', vsLabel: 'vs',
     guide: {
       nav: 'Tier guide', title: 'Bingo Tier Guide',

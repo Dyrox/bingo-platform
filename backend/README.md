@@ -37,6 +37,7 @@ npm test
 | POST | `/api/me/link-code` | session | a 6-character code, valid 10 minutes, for `/bingo link <code>` |
 | DELETE | `/api/me/players/:uuid` | session | unlink a Minecraft character |
 | POST / DELETE | `/api/me/keys`, `/api/me/keys/:id` | session | create (key shown once) / revoke upload keys |
+| POST | `/api/me/import/yab` | session | import YAB's own history: multipart `file` = `config/yet-another-minecraft-bingo/bingo.db`. Results only (no cards); skips rounds already here, lets a fuller copy replace a partial import (`src/import-yab.ts`) |
 | POST | `/api/link` | upload key | sent by bingo-reporter when a player types `/bingo link <code>`: links that player's UUID to the code's account |
 | GET | `/api/leaderboard?period=all\|month` | – | everyone ranked by wins: W/L/D, win rate, items, best streak, fastest first line / card (from timelines) |
 | GET | `/api/goals/stats` | – | per goal over team cards: appearances, completions, average and fastest in-game time to complete |

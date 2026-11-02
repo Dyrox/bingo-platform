@@ -39,6 +39,8 @@ const NAMES: Record<string, { zh: string; en: string }> = {
   blue: { zh: '蓝队', en: 'Blue' }, pink: { zh: '粉队', en: 'Pink' }, light_purple: { zh: '粉队', en: 'Pink' },
   purple: { zh: '紫队', en: 'Purple' }, gray: { zh: '灰队', en: 'Gray' }, white: { zh: '白队', en: 'White' },
   black: { zh: '黑队', en: 'Black' },
+  // added by the bingo.db import for a round some other team won, when the file only knew its own team
+  unknown: { zh: '其他队伍', en: 'Other team' },
 };
 
 export const teamColor = (id: string) => cardStyle(id).accent;
