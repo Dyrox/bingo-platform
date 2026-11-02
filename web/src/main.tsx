@@ -6,6 +6,7 @@ import { LangProvider } from './i18n';
 import { AccountProvider } from './account';
 import { AccountPage } from './pages/AccountPage';
 import { GuidePage } from './pages/GuidePage';
+import { LeaderboardPage } from './pages/LeaderboardPage';
 import { MatchDetail } from './pages/MatchDetail';
 import { MatchList } from './pages/MatchList';
 import { PlayerShell } from './pages/PlayerShell';
@@ -27,6 +28,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="players" element={<PlayersPage />} />
             <Route path="account" element={<AccountPage />} />
             <Route path="guide" element={<GuidePage />} />
+            <Route path="leaderboard" element={<LeaderboardPage />} />
             <Route path="players/:uuid" element={<PlayerShell />}>
               <Route index element={<ProfileHome />} />
               <Route path="records" element={<Records />} />

@@ -65,8 +65,20 @@ export interface PlayerProfile {
   allTime: PlayerTotals & { winStreak: number; bestWinStreak: number };
   monthly: PlayerTotals;
   favoriteTeam: { teamId: string; share: number } | null;
+  rivals: { uuid: string; name: string; games: number; wins: number; losses: number; draws: number }[];
+  goals: { best: (GoalStat & { objectiveId: string })[]; worst: (GoalStat & { objectiveId: string })[] };
   history: { id: string; endedAt: string; durationMs: number; teamId: string; items: number; lines: number; cards: number; teams: number; result: Result }[];
 }
+
+/** Per goal, over team cards: how often it came up, was completed, and how long it took (in-game ms). */
+export interface GoalStat { appearances: number; completions: number; avgMs: number | null; fastestMs: number | null }
+export const getGoalStats = () => get<{ goals: Record<string, GoalStat> }>('/api/goals/stats').then(r => r.goals);
+
+export interface LeaderboardRow extends PlayerTotals {
+  uuid: string; name: string; winStreak: number; bestWinStreak: number;
+  winRate: number | null; fastestLineMs: number | null; fastestCardMs: number | null;
+}
+export const getLeaderboard = (period: 'all' | 'month') => get<{ players: LeaderboardRow[] }>(`/api/leaderboard?period=${period}`).then(r => r.players);
 
 export interface PlayerListing { uuid: string; name: string; games: number; lastPlayed: string }
 

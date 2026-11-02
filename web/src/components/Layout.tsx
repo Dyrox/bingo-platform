@@ -22,6 +22,7 @@ export function Layout() {
             <NavLink to={me ? `/players/${me}` : '/'} end={!me}>{t.me}</NavLink>
             <NavLink to="/matches">{t.allMatches}</NavLink>
             <NavLink to="/players" end>{t.players}</NavLink>
+            <NavLink to="/leaderboard">{t.board.nav}</NavLink>
             <NavLink to="/guide">{t.guide.nav}</NavLink>
           </nav>
           {account?.user

@@ -180,7 +180,18 @@ nav a.active, nav a:hover { color: var(--fg); background: var(--chip) }
 
 /* timeline: one line per thing that happened, like YAB's chat messages */
 .timeline-panel h2 { margin-bottom: 6px }
-.timeline { list-style: none; margin: 0; padding: 0; max-height: 460px; overflow-y: auto }
+.timeline { position: relative; list-style: none; margin: 0; padding: 0; max-height: 460px; overflow-y: auto }
+.tl.future { opacity: .32 }
+.tl.current { background: color-mix(in srgb, var(--accent) 16%, transparent) }
+
+/* replay: scrub the round and watch the cards fill in */
+.replay-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 4px 0 -6px }
+.replay-bar.on { position: sticky; top: 64px; z-index: 7; background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px;
+  box-shadow: 0 4px 14px rgb(0 0 0 / .08) }
+.replay-play { font-weight: 600; white-space: nowrap }
+.replay-range { flex: 1 1 200px; min-width: 120px; accent-color: var(--accent) }
+.replay-time { font-variant-numeric: tabular-nums; font-size: 13px; color: var(--muted); white-space: nowrap }
+.match-view.compact .replay-bar.on { position: static }
 .tl { display: flex; align-items: center; gap: 8px; padding: 5px 6px; border-radius: 5px; min-width: 0 }
 .tl:hover, .tl:focus-visible { background: var(--chip); outline: none }
 .tl-icon { width: 20px; height: 20px; flex: none; display: grid; place-items: center; image-rendering: pixelated }
@@ -267,6 +278,8 @@ nav a.active, nav a:hover { color: var(--fg); background: var(--chip) }
 .gd-tip .m { display: flex; gap: 6px }
 .gd-tip .m b { font-family: var(--display); min-width: 1ch }
 .gd-tip .m.me { font-weight: 700 }
+.gd-stat { display: block; font-size: 11.5px; color: var(--accent); font-weight: 500; margin-top: 1px }
+.gd-sort { font: inherit; font-size: 13px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); color: var(--fg) }
 .gd-footer { margin: 28px 0 40px; max-width: 80ch }
 /* on phones the wrapped filter bar would cover a third of the screen; let it scroll away */
 @media (max-width: 560px) { .gd-bar { position: static } }
@@ -277,6 +290,40 @@ nav a.active, nav a:hover { color: var(--fg); background: var(--chip) }
 .dl-btn:hover { filter: brightness(.92) }
 .sha { display: block; font-size: 11px; overflow-wrap: anywhere; margin-top: 2px }
 .reporter-steps { margin: 10px 0 0; padding-left: 20px; color: var(--muted); font-size: 13px; line-height: 1.7 }
+
+/* leaderboard */
+.board-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap }
+.table-wrap { overflow-x: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; margin-bottom: 8px }
+.board-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; white-space: nowrap }
+.board-table th, .board-table td { padding: 8px 12px; text-align: right; border-bottom: 1px solid var(--line) }
+.board-table tr:last-child td { border-bottom: none }
+.board-table th { font-weight: 500; font-size: 12.5px; color: var(--muted) }
+.board-table .rank, .board-table .who-col { text-align: left }
+.board-table .rank { width: 36px; font-weight: 700 }
+.board-table td i { font-style: normal; color: var(--muted) }
+.board-table tr.me td { background: color-mix(in srgb, var(--win) 10%, transparent) }
+.th-sort { background: none; border: none; padding: 0; color: inherit; cursor: pointer; font: inherit }
+.th-sort.on { color: var(--fg); font-weight: 700 }
+.th-sort.on::after { content: " ▾" }
+
+/* profile: opponents and goals side by side */
+.panel-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; margin-bottom: 14px }
+.panel-pair .panel { margin-bottom: 0 }
+.rivals { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px }
+.rivals li { display: grid; grid-template-columns: minmax(90px, 1fr) minmax(80px, 2fr) auto; align-items: center; gap: 10px }
+.rival-bar { display: flex; gap: 2px; height: 10px }
+.rival-bar span { border-radius: 3px; min-width: 4px }
+.rival-bar .w { background: var(--win) }
+.rival-bar .d { background: var(--line) }
+.rival-bar .l { background: var(--tS) }
+.rival-record { font-size: 13px; font-variant-numeric: tabular-nums; color: var(--muted); white-space: nowrap }
+.my-goals { display: grid; grid-template-columns: 1fr 1fr; gap: 14px }
+.my-goals h3 { font-size: 13px; color: var(--muted); margin: 0 0 6px; font-weight: 600 }
+.my-goals ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px }
+.my-goals li { display: grid; grid-template-columns: 24px 1fr; column-gap: 8px; align-items: center }
+.my-goals li .ico { grid-row: span 2 }
+.mg-name { font-size: 13.5px; overflow-wrap: anywhere; line-height: 1.25 }
+@media (max-width: 420px) { .my-goals { grid-template-columns: 1fr } }
 
 /* player picker */
 .player-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; margin: 16px 0 40px }

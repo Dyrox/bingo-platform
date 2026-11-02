@@ -1,13 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { getMatch, NotFound, type Match, type MatchEvent } from '../api';
 import { Status } from '../components/Layout';
 import { TeamCard } from '../components/TeamCard';
-import { Timeline } from '../components/Timeline';
+import { clock, Timeline } from '../components/Timeline';
 import { formatDate, formatDuration } from '../format';
 import { useGoals } from '../goals';
 import { useLang, type Strings } from '../i18n';
 import { teamName } from '../teams';
+import { frameAt, replayEnd, SPEEDS, useReplay } from '../replay';
 
 // option values as bingo-reporter sends them, e.g. "cards:1", "teams_win:2", "end_game"
 function optionValue(key: string, v: unknown, t: Strings) {
@@ -37,6 +38,9 @@ export function MatchView({ id, compact = false }: { id: string; compact?: boole
   const [error, setError] = useState<'missing' | 'failed' | null>(null);
   const goals = useGoals(match?.modVersion);
   const [focus, setFocus] = useState<MatchEvent | null>(null);
+  const end = match ? replayEnd(match) : 0;
+  const replay = useReplay(end);
+  const frame = useMemo(() => match && replay.t !== null ? frameAt(match.events, replay.t) : null, [match, replay.t]);
 
   useEffect(() => {
     let live = true;
@@ -67,17 +71,37 @@ export function MatchView({ id, compact = false }: { id: string; compact?: boole
         </p>
       </div>
 
+      {match.events.length > 0 && (
+        <div className={'replay-bar' + (replay.t !== null ? ' on' : '')}>
+          <button className="pill replay-play" onClick={replay.toggle} aria-label={replay.playing ? t.replay.pause : t.replay.play}>
+            {replay.playing ? '⏸' : '▶'}{replay.t === null && <> {t.replay.start}</>}
+          </button>
+          {replay.t !== null && (
+            <>
+              <input type="range" className="replay-range" min={0} max={end} step={1000} value={replay.t}
+                aria-label={t.replay.label} onChange={e => replay.seek(Number(e.target.value))} />
+              <span className="replay-time">{clock(replay.t)} / {clock(end)}</span>
+              <div className="seg" role="group" aria-label={t.replay.speed}>
+                {SPEEDS.map(s => <button key={s} aria-pressed={replay.speed === s} onClick={() => replay.setSpeed(s)}>{s}×</button>)}
+              </div>
+              <button className="pill small" onClick={replay.stop}>{t.replay.exit}</button>
+            </>
+          )}
+        </div>
+      )}
+
       <section className="cards-panel" aria-label={t.cards_}>
         {goals
           ? match.teams.map(tm => <TeamCard key={tm.id} team={tm} board={cardFor(tm.id)} goals={goals.goals} version={goals.version}
-              highlight={focus?.team === tm.id ? focus.objectiveId : null} />)
+              highlight={focus?.team === tm.id ? focus.objectiveId : null}
+              frame={frame} finished={replay.t === null || replay.t >= end} />)
           : <Status>{t.loading}</Status>}
       </section>
 
       {goals && (
         <section className="panel timeline-panel">
           <h2>{t.timeline}{match.events.length > 0 && <span className="muted count-badge"> · {match.events.length}</span>}</h2>
-          <Timeline match={match} goals={goals.goals} version={goals.version} onFocusGoal={setFocus} />
+          <Timeline match={match} goals={goals.goals} version={goals.version} onFocusGoal={setFocus} now={replay.t} />
         </section>
       )}
 

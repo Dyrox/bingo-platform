@@ -14,11 +14,13 @@ npm install && npm run dev       # site on :5173, /api is proxied to :3000 (over
 | Path | |
 |---|---|
 | `/matches` | all matches, newest first, "load more" pages through `GET /api/matches` |
-| `/matches/:id` | one round: timeline (hover an entry to flash its tile), one card per team drawn with the mod's own art (frame per team colour, green completed tiles, star / forbidden frames, WINNER! tag), scores, settings |
+| `/matches/:id` | one round: replay (scrub or play the round at 10–60×; cards, scores and timeline follow), timeline (hover an entry to flash its tile), one card per team drawn with the mod's own art (frame per team colour, green completed tiles, star / forbidden frames, WINNER! tag), scores, settings |
 | `/` | "我的主页": logged out → Discord login; logged in without a character → `/bingo link` code; linked → your player page. Who you are only ever comes from the account. |
-| `/players/:uuid` | profile: totals, this month, activity heatmap, items-per-game trend |
+| `/players/:uuid` | profile: totals, this month, opponents, strongest / toughest goals, activity heatmap, items-per-game trend |
+| `/leaderboard` | all-time or this-month ranking, sortable by any column |
 | `/players/:uuid/records/:id?` | records: the player's matches by day, with the picked match shown alongside |
 | `/players` | everyone who has played |
+| `/guide` | tier guide of every goal, with how each has gone in real matches (seen / completed / average time) and sorting by it |
 | `/account` | Discord login, linked Minecraft characters (with the `/bingo link` code flow) and upload keys |
 
 中文 / EN is remembered per browser. Team ids like `bingo_red` are shown as 红队 / Red (`src/teams.ts`).

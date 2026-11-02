@@ -1,4 +1,5 @@
 import type { Board, Team } from '../api';
+import type { ReplayFrame } from '../replay';
 import { prettyId, type Goal, type Goals } from '../goals';
 import { useLang } from '../i18n';
 import { cardLabel, cardStyle, teamName } from '../teams';
@@ -18,21 +19,35 @@ const ACHIEVED = '#55ff55';        // BingoCardColors.DEFAULTS.tileAchievedColor
 /** Which goals the mod frames with the little star (see Decoration.ADVANCEMENT in YAB's objective managers). */
 const starred = (g?: Goal) => !!g && (g.c === 'advancement' || (g.c === 'challenge' && g.k === 'stat'));
 
-/** One team's view of its card, drawn like the mod's end-of-game screen. */
-export function TeamCard({ team, board, goals, version, highlight }: {
+/**
+ * One team's view of its card, drawn like the mod's end-of-game screen.
+ * With `frame` (replay), it shows what every team held at that moment instead of the final result.
+ */
+export function TeamCard({ team, board, goals, version, highlight, frame, finished = true }: {
   team: Team; board: Board; goals: Goals; version: string; highlight?: string | null;
+  frame?: ReplayFrame | null; finished?: boolean;
 }) {
   const { lang, t } = useLang();
   const style = cardStyle(team.id);
   const at = new Map(board.cells.map(c => [`${c.x},${c.y}`, c]));
   const sep = lang === 'zh' ? '、' : ', ';
+  const holders = (objectiveId: string, completedBy: string[]) => frame
+    ? [...frame.done].filter(([, held]) => held.has(objectiveId)).map(([teamId]) => teamId)
+    : completedBy;
+  // the score under the card follows the replay too: items = goals held on this card right now
+  const shown: Team = frame ? {
+    ...team,
+    items: board.cells.filter(c => frame.done.get(team.id)?.has(c.objectiveId)).length,
+    lines: frame.lines.get(team.id) ?? 0,
+    cards: frame.cards.get(team.id) ?? 0,
+  } : team;
 
   return (
     <figure className="team-board">
       <div className="mc-card" style={{ backgroundImage: `url(${style.frame})` }}>
         <McText text={cardLabel(team.id, team.players)} color={style.text} unit={UNIT} maxWidth={70}
           style={{ position: 'absolute', left: pctX(12), top: pctY(10) }} />
-        {team.winner && (
+        {team.winner && finished && (
           <McText text="WINNER!" color={style.accent} unit={UNIT} shadow className="winner-tag" />
         )}
         {Array.from({ length: 25 }, (_, i) => {
@@ -41,8 +56,9 @@ export function TeamCard({ team, board, goals, version, highlight }: {
           if (!cell) return null;
           const goal = goals[cell.objectiveId];
           const name = goal ? (lang === 'zh' ? goal.z ?? goal.n : goal.n) : prettyId(cell.objectiveId);
-          const got = cell.completedBy.includes(team.id);
-          const others = cell.completedBy.filter(id => id !== team.id);
+          const by = holders(cell.objectiveId, cell.completedBy);
+          const got = by.includes(team.id);
+          const others = by.filter(id => id !== team.id);
           const tier = cell.tier ?? goal?.t;
           return (
             <div key={i} className={'tile' + (highlight === cell.objectiveId ? ' flash' : '')} tabIndex={0} aria-label={name}
@@ -62,7 +78,7 @@ export function TeamCard({ team, board, goals, version, highlight }: {
         })}
       </div>
       <figcaption>
-        <Score team={team} />
+        <Score team={shown} />
         <div className="team-players">{team.players.map(p => <PlayerLink key={p.uuid} {...p} />)}</div>
       </figcaption>
     </figure>

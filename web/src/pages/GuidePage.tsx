@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { GoalIcon } from '../components/GoalIcon';
 import { Status } from '../components/Layout';
 import { useGoals, type Goal } from '../goals';
+import { getGoalStats, type GoalStat } from '../api';
+import { clock } from '../components/Timeline';
 import { useLang } from '../i18n';
 
 // The tier guide, part of the site (it began as a standalone page).
@@ -10,7 +12,8 @@ import { useLang } from '../i18n';
 const TIERS = ['S', 'A', 'B', 'C', 'D'] as const;
 type Entry = Goal & { id: string };
 type Board = 'all' | 'normal' | 'simplified';
-type Filter = { c: string; tiers: string[]; board: Board };
+type Sort = 'default' | 'seen' | 'rate' | 'fast';
+type Filter = { c: string; tiers: string[]; board: Board; sort?: Sort };
 
 const KEY = 'bingo-guide-filter';
 const readFilter = (): Filter => {
@@ -47,6 +50,9 @@ export function GuidePage() {
   const { lang, t } = useLang();
   const T = t.guide;
   const data = useGoals('latest');
+  // how each goal has gone in real matches on this site; the guide works without it
+  const [stats, setStats] = useState<Record<string, GoalStat>>({});
+  useEffect(() => { getGoalStats().then(setStats).catch(() => {}); }, []);
   const [f, setF] = useState<Filter>(readFilter);
   const [q, setQ] = useState('');
   useEffect(() => { try { localStorage.setItem(KEY, JSON.stringify(f)); } catch { /* private mode */ } }, [f]);
@@ -83,11 +89,15 @@ export function GuidePage() {
     const sm = e.sm && !simple ? <span className="gd-tag" title={T.smTip}>{T.sm}</span>
       : simple && e.st && !e.sm && e.st !== e.t ? <span className="gd-tag">{T.was(e.t)}</span> : null;
     const icon = <GoalIcon goal={e} version={data.version} size={e.c === 'item' ? 28 : 36} />;
+    const st = stats[e.id];
+    const statLine = st && st.appearances > 0 && (
+      <span className="gd-stat">{t.goalStat(st.appearances, Math.round((st.completions / st.appearances) * 100), st.avgMs === null ? null : clock(st.avgMs))}</span>
+    );
     if (e.c === 'item') {
       return (
         <div key={e.id} className="gd-card" title={e.id}>
           {icon}
-          <span className="gd-name">{main}{alt && <span className="gd-alt"> {alt}</span>}</span>
+          <span className="gd-name">{main}{alt && <span className="gd-alt"> {alt}</span>}{statLine}</span>
           {sm}{grp}
         </div>
       );
@@ -101,6 +111,7 @@ export function GuidePage() {
           <div className="gd-name">{main}</div>
           {alt && <div className="gd-alt">{alt}</div>}
           {desc && <div className="gd-desc">{desc}</div>}
+          {statLine}
           <div className="gd-tags">
             <span className="gd-tag">{T.catTag[e.c]}</span>
             {sub && <span className="gd-tag">{sub}</span>}
@@ -114,6 +125,16 @@ export function GuidePage() {
   let total = 0;
   const sections = TIERS.filter(tier => f.tiers.includes(tier)).map(tier => {
     const rows = list.filter(e => tierOf(e) === tier && match(e));
+    // within a tier: by how the goal has gone in real matches; goals never seen keep their order at the end
+    const key = (e: Entry) => {
+      const s = stats[e.id];
+      if (!s?.appearances) return null;
+      return f.sort === 'seen' ? -s.appearances : f.sort === 'rate' ? -s.completions / s.appearances : f.sort === 'fast' ? s.avgMs : null;
+    };
+    if (f.sort && f.sort !== 'default') rows.sort((a, b) => {
+      const x = key(a), y = key(b);
+      return x === null ? (y === null ? 0 : 1) : y === null ? -1 : x - y;
+    });
     total += rows.length;
     if (!rows.length) return null;
     const adv = rows.filter(e => e.c === 'advancement'), ch = rows.filter(e => e.c === 'challenge'), it = rows.filter(e => e.c === 'item');
@@ -157,6 +178,9 @@ export function GuidePage() {
               aria-pressed={f.tiers.includes(tier)} onClick={() => toggleTier(tier)}>{tier}</button>
           ))}
         </div>
+        <select className="gd-sort" value={f.sort ?? 'default'} aria-label={T.sortLabel} onChange={e => setF(p => ({ ...p, sort: e.target.value as Sort }))}>
+          {(['default', 'seen', 'rate', 'fast'] as const).map(k => <option key={k} value={k}>{T.sort[k]}</option>)}
+        </select>
         <input className="gd-search" type="search" value={q} onChange={e => setQ(e.target.value)} placeholder={T.search} />
         <span className="muted gd-count">{T.count(total, list.filter(onBoard).length)}</span>
       </div>

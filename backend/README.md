@@ -38,8 +38,10 @@ npm test
 | DELETE | `/api/me/players/:uuid` | session | unlink a Minecraft character |
 | POST / DELETE | `/api/me/keys`, `/api/me/keys/:id` | session | create (key shown once) / revoke upload keys |
 | POST | `/api/link` | upload key | sent by bingo-reporter when a player types `/bingo link <code>`: links that player's UUID to the code's account |
+| GET | `/api/leaderboard?period=all\|month` | – | everyone ranked by wins: W/L/D, win rate, items, best streak, fastest first line / card (from timelines) |
+| GET | `/api/goals/stats` | – | per goal over team cards: appearances, completions, average and fastest in-game time to complete |
 | GET | `/api/players` | – | everyone who has played, with game counts, most recently active first |
-| GET | `/api/players/:uuid` | – | all-time and this-month totals (W/L/D, items, playtime, streaks, favourite team) plus a per-match history for charts |
+| GET | `/api/players/:uuid` | – | all-time and this-month totals (W/L/D, items, playtime, streaks, favourite team) plus opponents (record against each), strongest / toughest goals and a per-match history for charts |
 
 The upload body is documented by `src/payload.ts` and shown in `examples/match.json`. `id` is YAB's round id and each board `id` is YAB's card id, so retries are safe and a resumed round replaces its earlier result.
 

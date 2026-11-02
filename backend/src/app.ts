@@ -9,7 +9,8 @@ import type { DB } from "./db/client.ts";
 import { findKey } from "./keys.ts";
 import { ConflictError, getMatch, listMatches, saveMatch } from "./matches.ts";
 import { MatchUpload } from "./payload.ts";
-import { listPlayers, playerProfile } from "./players.ts";
+import { leaderboard, listPlayers, playerProfile } from "./players.ts";
+import { goalStats } from "./stats.ts";
 import { registerAuthRoutes, type AuthConfig } from "./auth.ts";
 
 type Env = { Variables: { key: NonNullable<Awaited<ReturnType<typeof findKey>>> } };
@@ -60,6 +61,13 @@ export function createApp(db: DB, opts: { auth?: AuthConfig; webDist?: string } 
       const m = await getMatch(db, c.req.valid("param").id);
       return m ? c.json(m) : c.json({ error: "not_found" }, 404);
     });
+
+  app.get("/api/leaderboard",
+    zValidator("query", z.object({ period: z.enum(["all", "month"]).default("all") }), invalid),
+    async c => c.json({ players: await leaderboard(db, c.req.valid("query").period) }));
+
+  // per goal: appearances on team cards, completions, average / fastest in-game time to complete
+  app.get("/api/goals/stats", async c => c.json({ goals: Object.fromEntries(await goalStats(db)) }));
 
   app.get("/api/players", async c => c.json({ players: await listPlayers(db) }));
 
