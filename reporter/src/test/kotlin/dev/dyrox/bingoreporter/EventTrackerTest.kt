@@ -15,7 +15,11 @@ private class LiveTeam(override val id: String, override val players: List<UUID>
     override val score get() = BingoTeamScore(items = 0, lines = lines, cards = 0)
 }
 
+// teamsSeen sits behind the API, on YAB's BingoObjective (see MatchCollector.seenBy)
+class SeenObjective { val teamsSeen = mutableSetOf<String>() }
+
 private class LiveCell(override val objectiveId: String) : ICardEntryAccess {
+    val objective = SeenObjective()
     val teams = mutableSetOf<String>()
     val players = mutableSetOf<UUID>()
     override val objectiveTier: ObjectiveTier? = null
@@ -74,5 +78,24 @@ class EventTrackerTest {
             listOf(455_000L, "goal", "bingo_blue", b.toString(), "minecraft:cod", null),
             listOf(455_000L, "lost", "bingo_blue", null, never.objectiveId, null),
         ), got)
+    }
+
+    @Test
+    fun `in Hidden Items mode, records when each team first sees a tile`() {
+        val stick = LiveCell("minecraft:stick")
+        val card = LiveCard(mapOf((0 to 0) to stick))
+        val teams = listOf(LiveTeam("bingo_red", listOf(a)), LiveTeam("bingo_blue", listOf(b)))
+        val tracker = EventTracker()
+        tracker.poll(0, teams, SharedCard(card), trackSeen = true)
+        stick.objective.teamsSeen += "bingo_red"
+        tracker.poll(3_000, teams, SharedCard(card), trackSeen = true)
+        tracker.poll(4_000, teams, SharedCard(card), trackSeen = true)
+        stick.objective.teamsSeen += "bingo_blue"
+        tracker.poll(9_000, teams, SharedCard(card), trackSeen = true)
+        assertEquals(listOf(3_000L to "bingo_red", 9_000L to "bingo_blue"), tracker.events.filter { it.type == "seen" }.map { it.t to it.team })
+
+        val plain = EventTracker()
+        plain.poll(0, teams, SharedCard(card))
+        assertEquals(emptyList(), plain.events, "other modes: no seen events")
     }
 }

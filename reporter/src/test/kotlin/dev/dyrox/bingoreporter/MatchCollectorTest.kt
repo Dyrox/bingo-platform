@@ -34,9 +34,13 @@ class YabCell(n: Int) { val objective = Objective(Display(Stack(n))) }
 class ItemObjective(val itemCount: Int)
 class YabItemCell(n: Int) { val objective = ItemObjective(n) }
 // and OptionsService.options (private) → BingoOptions.cards → BingoCardOptions.goal
-class CardOptions(val goal: BingoGoal)
-class InnerOptions(val cards: List<CardOptions>)
-class YabOptions(goals: List<BingoGoal>) { private val options = InnerOptions(goals.map { CardOptions(it) }) }
+class CardOptions(val goal: BingoGoal, val isLockoutMode: Boolean = false, val isInventoryMode: Boolean = false,
+                  val isHiddenItemsMode: Boolean = false, val isConsumeItemsMode: Boolean = false)
+class InnerOptions(val cards: List<CardOptions>, val showHiddenTiers: Boolean = false)
+class YabOptions(cards: List<CardOptions>, showHiddenTiers: Boolean = false) {
+    constructor(goals: List<BingoGoal>) : this(goals.map { CardOptions(it) })
+    private val options = InnerOptions(cards, showHiddenTiers)
+}
 class YabTeam(override val id: String, override val players: List<UUID>, override val score: BingoTeamScore, state: Any) : IBingoTeam {
     val team = InnerTeam(state)
 }
@@ -162,6 +166,15 @@ class MatchCollectorTest {
     fun `reads each card's goal`() {
         assertEquals(listOf("lines:8", "items:20"), MatchCollector.cardGoals(YabOptions(listOf(BingoGoal.Lines(8), BingoGoal.Items(20)))))
         assertNull(MatchCollector.cardGoals(Options()), "not YAB's options: unknown")
+    }
+
+    @Test
+    fun `reads each card's modes`() {
+        val o = YabOptions(listOf(CardOptions(BingoGoal.Lines(1), isLockoutMode = true, isHiddenItemsMode = true),
+            CardOptions(BingoGoal.Lines(1), isInventoryMode = true, isConsumeItemsMode = true)), showHiddenTiers = true)
+        assertEquals(listOf(listOf("lockout", "hidden_items"), listOf("inventory", "consume_items")), MatchCollector.cardModes(o))
+        assertEquals(true, MatchCollector.showHiddenTiers(o))
+        assertNull(MatchCollector.cardModes(Options()))
     }
 
     @Test

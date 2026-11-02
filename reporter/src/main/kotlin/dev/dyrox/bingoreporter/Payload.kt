@@ -40,7 +40,7 @@ data class BoardPayload(
     val cells: List<CellPayload>,
 )
 
-/** One timeline entry. `t` is in-game time in ms; type is goal / lost / line / card. */
+/** One timeline entry. `t` is in-game time in ms; type is goal / lost / line / card / seen (Hidden Items). */
 @Serializable
 data class EventPayload(
     val t: Long,

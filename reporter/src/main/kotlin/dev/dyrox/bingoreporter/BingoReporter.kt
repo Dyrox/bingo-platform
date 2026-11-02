@@ -79,7 +79,8 @@ object BingoReporter : ModInitializer {
     private fun poll(api: IBingoApi) {
         val tracker = trackers[api.game.id] ?: return
         try {
-            tracker.poll(api.game.time?.toMillis() ?: 0, api.teams.toList(), api.cards)
+            val hidden = MatchCollector.cardModes(api.options)?.firstOrNull()?.contains("hidden_items") == true
+            tracker.poll(api.game.time?.toMillis() ?: 0, api.teams.toList(), api.cards, trackSeen = hidden)
         } catch (e: Exception) {
             log.warn("Couldn't read the cards for the timeline: {}", e.message)
         }

@@ -122,10 +122,7 @@ object MatchCollector {
      * won at 8 lines. Not in the API; read from YAB's OptionsService.options.cards[i].goal.
      */
     fun cardGoals(o: Any): List<String>? = try {
-        val field = o.javaClass.getDeclaredField("options").apply { isAccessible = true }
-        val options = field.get(o)
-        val cards = options.javaClass.getMethod("getCards").invoke(options) as List<*>
-        cards.map { card ->
+        yabCards(o)?.map { card ->
             when (val goal = card!!.javaClass.getMethod("getGoal").invoke(card)) {
                 is BingoGoal -> when {
                     goal.isFullCard() -> "full"
@@ -135,10 +132,57 @@ object MatchCollector {
                 }
                 else -> return null
             }
-        }.takeIf { it.isNotEmpty() }
+        }?.takeIf { it.isNotEmpty() }
     } catch (_: ReflectiveOperationException) {
         null
     } catch (_: RuntimeException) {
+        null
+    }
+
+    /** YAB's own options behind the API: OptionsService.options (private). */
+    private fun yabOptions(o: Any): Any? =
+        o.javaClass.getDeclaredField("options").apply { isAccessible = true }.get(o)
+
+    private fun yabCards(o: Any): List<Any>? {
+        val options = yabOptions(o) ?: return null
+        return (options.javaClass.getMethod("getCards").invoke(options) as List<*>).filterNotNull()
+    }
+
+    /** Each card's modes, by YAB's own names: lockout, inventory, hidden_items, consume_items. */
+    fun cardModes(o: Any): List<List<String>>? = try {
+        yabCards(o)?.map { card ->
+            MODES.filter { (getter, _) -> card.javaClass.getMethod(getter).invoke(card) == true }.map { it.second }
+        }
+    } catch (_: ReflectiveOperationException) {
+        null
+    } catch (_: RuntimeException) {
+        null
+    }
+
+    private val MODES = listOf(
+        "isLockoutMode" to "lockout",
+        "isInventoryMode" to "inventory",
+        "isHiddenItemsMode" to "hidden_items",
+        "isConsumeItemsMode" to "consume_items",
+    )
+
+    /** "Show tier if hidden": hidden tiles show their tier's "?" instead of a plain one. */
+    fun showHiddenTiers(o: Any): Boolean? = try {
+        yabOptions(o)?.let { it.javaClass.getMethod("getShowHiddenTiers").invoke(it) as? Boolean }
+    } catch (_: ReflectiveOperationException) {
+        null
+    }
+
+    /**
+     * Teams that have seen a tile (Hidden Items mode reveals a tile to a team once it has seen it):
+     * BingoCardEntryAccess.getObjective().getTeamsSeen(), a set of BingoTeamKey value classes.
+     */
+    fun seenBy(cell: Any): Set<String>? = try {
+        val objective = cell.javaClass.getMethod("getObjective").invoke(cell)
+        (objective.javaClass.getMethod("getTeamsSeen").invoke(objective) as Set<*>).mapNotNull { key ->
+            key?.javaClass?.methods?.firstOrNull { it.name == "unbox-impl" }?.invoke(key) as? String ?: key as? String
+        }.toSet()
+    } catch (_: ReflectiveOperationException) {
         null
     }
 
@@ -163,6 +207,10 @@ object MatchCollector {
             EndWhen.AllWin -> "all_win"
         })
         cardGoals(o)?.let { goals -> put("cardGoals", buildJsonArray { goals.forEach { add(JsonPrimitive(it)) } }) }
+        // the first card's modes, written like the bingo.db import: "lockout,hidden_items"
+        val modes = cardModes(o)?.firstOrNull().orEmpty()
+        if (modes.isNotEmpty()) put("mode", modes.joinToString(","))
+        if ("hidden_items" in modes) showHiddenTiers(o)?.let { put("showHiddenTiers", it) }
         put("stalemate", o.stalemateBehavior.name.lowercase())
         o.timeLimit?.let { put("timeLimitSeconds", it.toSeconds()) }
         put("pvp", o.isPvpEnabled)
