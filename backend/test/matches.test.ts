@@ -50,6 +50,24 @@ describe("POST /api/matches", () => {
     expect(got.boards[0].cells).toHaveLength(25);
   });
 
+  it("a first-win round that ended on a team's line was won by that team, even if the reporter didn't say", async () => {
+    const m = sample();
+    m.options = { winCondition: "cards:1", endWhen: "first_win" };
+    m.teams = m.teams.map((t: any) => ({ ...t, winner: false }));
+    m.events = [
+      { t: 1000, type: "line", team: "blue", value: 1 },
+      { t: m.durationMs, type: "line", team: "red", value: 8 },
+    ];
+    await upload(m);
+    const winners = async () => (await (await app.request(`/api/matches/${m.id}`)).json()).teams.map((t: any) => [t.id, t.winner]);
+    expect(await winners()).toEqual([["red", true], ["blue", false]]);
+
+    // stopped by hand a minute after the last line: nobody won
+    m.durationMs += 60_000;
+    await upload(m);
+    expect(await winners()).toEqual([["red", false], ["blue", false]]);
+  });
+
   it("won't let another user overwrite a round", async () => {
     await upload(sample());
     const other = (await createKey(db, "someone-else", "PC")).key;

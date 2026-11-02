@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import type { Board, Team } from '../api';
 import type { ReplayFrame } from '../replay';
 import { prettyId, type Goal, type Goals } from '../goals';
@@ -5,6 +6,7 @@ import { useLang } from '../i18n';
 import { cardLabel, cardStyle, teamName } from '../teams';
 import { GoalIcon } from './GoalIcon';
 import { McText } from './McText';
+import { WinStars } from './WinStars';
 import { PlayerLink, Score } from './Teams';
 
 // Geometry from the mod's ClientCardBufferRenderer, in card pixels:
@@ -29,6 +31,10 @@ export function TeamCard({ team, board, goals, version, highlight, frame, finish
 }) {
   const { lang, t } = useLang();
   const style = cardStyle(team.id);
+  // the win burst plays when the card shows its final result: on opening the round, and when a replay reaches the end
+  const won = team.winner && finished;
+  const [burst, setBurst] = useState(0);
+  useEffect(() => { if (won) setBurst(b => b + 1); }, [won]);
   const at = new Map(board.cells.map(c => [`${c.x},${c.y}`, c]));
   const sep = lang === 'zh' ? '、' : ', ';
   const holders = (objectiveId: string, completedBy: string[]) => frame
@@ -50,6 +56,7 @@ export function TeamCard({ team, board, goals, version, highlight, frame, finish
         {team.winner && finished && (
           <McText text="WINNER!" color={style.accent} unit={UNIT} shadow className="winner-tag" />
         )}
+        {won && burst > 0 && <WinStars play={burst} />}
         {Array.from({ length: 25 }, (_, i) => {
           const x = i % 5, y = Math.floor(i / 5);
           const cell = at.get(`${x},${y}`);

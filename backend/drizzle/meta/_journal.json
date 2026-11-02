@@ -43,6 +43,13 @@
       "when": 1793646974000,
       "tag": "0005_bigint_durations",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793652834901,
+      "tag": "0006_winner_from_last_line",
+      "breakpoints": true
     }
   ]
 }

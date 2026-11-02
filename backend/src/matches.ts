@@ -15,6 +15,19 @@ const isUniqueViolation = (e: unknown) => {
  * a round after it ended, which ends it again later with the same id and a newer result.
  * Only the user who uploaded a round can replace it.
  */
+/**
+ * Older reporters only marked a winner once a team had finished a card, which YAB doesn't count when the
+ * card is won on lines. When nobody is marked and a "first win" round ended the moment a team scored a
+ * line (or card), that team won. Same rule as drizzle/0006_winner_from_last_line.sql.
+ */
+export function inferWinner(m: MatchUpload): string | null {
+  if (m.teams.some(t => t.winner)) return null;
+  if (m.options?.endWhen !== "first_win" || !String(m.options?.winCondition ?? "").startsWith("cards:")) return null;
+  const last = m.events.filter(e => (e.type === "line" || e.type === "card") && e.t >= m.durationMs - 2000)
+    .reduce<MatchUpload["events"][number] | undefined>((a, e) => !a || e.t >= a.t ? e : a, undefined);
+  return last && m.teams.some(t => t.id === last.team) ? last.team : null;
+}
+
 export async function saveMatch(db: DB, m: MatchUpload, key: typeof uploadKeys.$inferSelect): Promise<{ created: boolean }> {
   let created = true;
   try {
@@ -38,8 +51,9 @@ export async function saveMatch(db: DB, m: MatchUpload, key: typeof uploadKeys.$
         startedAt: new Date(m.startedAt), endedAt: new Date(m.endedAt), durationMs: m.durationMs,
         options: m.options,
       });
+      const won = inferWinner(m);
       await tx.insert(matchTeams).values(m.teams.map((t, ord) => ({
-        matchId: m.id, teamId: t.id, ord, items: t.items, lines: t.lines, cards: t.cards, winner: t.winner,
+        matchId: m.id, teamId: t.id, ord, items: t.items, lines: t.lines, cards: t.cards, winner: t.winner || t.id === won,
       })));
       if (roster.length) {
         await tx.insert(matchPlayers).values(roster.map(p => ({ matchId: m.id, playerUuid: p.uuid, teamId: p.teamId, name: p.name })));

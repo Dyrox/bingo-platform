@@ -389,3 +389,6 @@ h1 .src-tag { font-family: var(--body); font-size: 13px; vertical-align: 6px; ma
   .match-row.selectable .match-teams { grid-column: 2 }
   .select-toggle { margin-left: 0 }
 }
+
+/* YAB's end-of-game ★ burst (components/WinStars.tsx) */
+.win-stars { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 50 }
