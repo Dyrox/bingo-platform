@@ -6,6 +6,8 @@ import { bodyLimit } from "hono/body-limit";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import type { DB } from "./db/client.ts";
+import { eq } from "drizzle-orm";
+import { users } from "./db/schema.ts";
 import { findKey } from "./keys.ts";
 import { ConflictError, getMatch, listMatches, saveMatch } from "./matches.ts";
 import { MatchUpload } from "./payload.ts";
@@ -25,6 +27,15 @@ export function createApp(db: DB, opts: { auth?: AuthConfig; webDist?: string } 
   registerAuthRoutes(app, db, opts.auth ?? { publicUrl: "http://localhost:5173" });
 
   app.get("/api/health", c => c.json({ ok: true }));
+
+  // bingo-reporter asks this when the game starts: is the upload key still good, and whose is it?
+  app.get("/api/key", async c => {
+    const token = c.req.header("authorization")?.match(/^Bearer (\S+)$/)?.[1];
+    const key = token && await findKey(db, token);
+    if (!key) return c.json({ error: "invalid_key" }, 401);
+    const [user] = await db.select({ name: users.name }).from(users).where(eq(users.id, key.userId));
+    return c.json({ ok: true, user: user?.name ?? null, key: key.name });
+  });
 
   app.post("/api/matches",
     bodyLimit({ maxSize: 512 * 1024, onError: c => c.json({ error: "payload_too_large" }, 413) }),

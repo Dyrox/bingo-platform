@@ -4,7 +4,7 @@ A match-history site for [Yet Another Minecraft Bingo](https://modrinth.com/mod/
 
 | Folder | What |
 |---|---|
-| [`reporter/`](reporter/README.md) | **bingo-reporter**, a small Fabric mod installed next to YAB. Records each round and uploads it; adds `/bingo link <code>`. |
+| [`reporter/`](reporter/README.md) | **bingo-reporter**, a small Fabric mod installed next to YAB. Records each round and uploads it; adds `/bingo link <code>` and `/bingo reporter`, and tells the host about updates and key problems. |
 | [`backend/`](backend/README.md) | API + database (Node, Hono, Postgres/PGlite). Stores matches, players, Discord accounts, upload keys. |
 | [`web/`](web/README.md) | The website (React + Vite): my page, records, match pages, players, tier guide, account. |
 | [`tools/goal-data/`](tools/goal-data/README.md) | Scripts that extract goal names, tiers and icons from the mod and game jars for the website. |

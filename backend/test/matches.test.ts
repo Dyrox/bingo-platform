@@ -74,6 +74,15 @@ describe("POST /api/matches", () => {
     expect((await upload(sample(), other)).status).toBe(409);
   });
 
+  it("tells the reporter whether its key is good, and whose it is", async () => {
+    const check = (k: string | null) => app.request("/api/key", { headers: k ? { authorization: `Bearer ${k}` } : {} });
+    const ok = await check(key);
+    expect(ok.status).toBe(200);
+    expect(await ok.json()).toEqual({ ok: true, user: "dyrox", key: "MacBook Air" });
+    expect((await check("bk_nope")).status).toBe(401);
+    expect((await check(null)).status).toBe(401);
+  });
+
   it("rejects missing, wrong and revoked keys", async () => {
     expect((await upload(sample(), null)).status).toBe(401);
     expect((await upload(sample(), "bgr_nope")).status).toBe(401);
