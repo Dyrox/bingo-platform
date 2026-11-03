@@ -395,3 +395,26 @@ h1 .src-tag { font-family: var(--body); font-size: 13px; vertical-align: 6px; ma
 /* the goal's count, like a stack size; the canvas includes the 1px shadow, which hangs past the tile */
 .tile-count { position: absolute; right: calc(100cqw / 122 * -1); top: calc(100cqw / 122 * 10); z-index: 2; pointer-events: none; image-rendering: pixelated }
 .tile-item img.ico { image-rendering: pixelated }
+
+/* the tier guide as a picker (ban editor) */
+.gd-card.pickable { cursor: pointer; user-select: none }
+.gd-card.pickable:hover { border-color: var(--muted) }
+.gd-card.picked { border-color: var(--tS); background: color-mix(in srgb, var(--tS) 10%, var(--panel)) }
+.gd-card.picked .ico, .gd-card.picked .gd-name { opacity: .55 }
+.gd-picked { position: absolute; top: -7px; right: -6px; font-size: 11px; font-weight: 700; padding: 0 6px; border-radius: 999px; background: var(--tS); color: #fff; line-height: 17px }
+
+/* custom bans */
+.drop { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 22px 16px; margin: 4px 0 10px; border: 2px dashed var(--line);
+  border-radius: 10px; background: var(--panel); cursor: pointer; text-align: center }
+.drop:hover, .drop.over { border-color: var(--win); background: color-mix(in srgb, var(--win) 8%, var(--panel)) }
+.ok-note { color: var(--win); margin: 2px 0 }
+.err-note { color: var(--tS); margin: 2px 0 }
+.bans-panel { margin: 12px 0 20px; display: flex; flex-direction: column; gap: 10px }
+.bans-panel p { margin: 0 }
+.bans-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px }
+.bans-head h2 { margin: 0 }
+.bans-actions { display: flex; flex-wrap: wrap; gap: 8px }
+.bans-chips { display: flex; flex-wrap: wrap; gap: 6px; max-height: 180px; overflow-y: auto }
+.ban-chip { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--line); background: var(--bg); border-radius: 999px; padding: 2px 9px 2px 5px; cursor: pointer; font-size: 12.5px }
+.ban-chip:hover { border-color: var(--tS); color: var(--tS) }
+.ban-chip.other { padding-left: 9px }

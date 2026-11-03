@@ -24,6 +24,7 @@ export function Layout() {
             <NavLink to="/players" end>{t.players}</NavLink>
             <NavLink to="/leaderboard">{t.board.nav}</NavLink>
             <NavLink to="/guide">{t.guide.nav}</NavLink>
+            <NavLink to="/bans">{t.bans.nav}</NavLink>
           </nav>
           {account?.user
             ? <Link to="/account" className="who">{account.user.avatarUrl && <img src={account.user.avatarUrl} alt="" width={24} height={24} />}<span>{account.user.name}</span></Link>

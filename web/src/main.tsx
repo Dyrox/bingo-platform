@@ -5,6 +5,7 @@ import { Layout } from './components/Layout';
 import { LangProvider } from './i18n';
 import { AccountProvider } from './account';
 import { AccountPage } from './pages/AccountPage';
+import { BansPage } from './pages/BansPage';
 import { GuidePage } from './pages/GuidePage';
 import { LeaderboardPage } from './pages/LeaderboardPage';
 import { MatchDetail } from './pages/MatchDetail';
@@ -28,6 +29,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="players" element={<PlayersPage />} />
             <Route path="account" element={<AccountPage />} />
             <Route path="guide" element={<GuidePage />} />
+            <Route path="bans" element={<BansPage />} />
             <Route path="leaderboard" element={<LeaderboardPage />} />
             <Route path="players/:uuid" element={<PlayerShell />}>
               <Route index element={<ProfileHome />} />

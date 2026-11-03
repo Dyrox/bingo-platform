@@ -46,7 +46,10 @@ function GroupTag({ e, mates, tierOf }: { e: Entry; mates: Entry[]; tierOf: (x: 
   );
 }
 
-export function GuidePage() {
+/** Lets another page use the guide as a picker (the ban editor): goals become toggles. */
+export interface GuidePick { picked: Set<string>; toggle: (id: string) => void; label: string }
+
+export function GuidePage({ pick }: { pick?: GuidePick } = {}) {
   const { lang, t } = useLang();
   const T = t.guide;
   const data = useGoals('latest');
@@ -93,19 +96,27 @@ export function GuidePage() {
     const statLine = st && st.appearances > 0 && (
       <span className="gd-stat">{t.goalStat(st.appearances, Math.round((st.completions / st.appearances) * 100), st.avgMs === null ? null : clock(st.avgMs))}</span>
     );
+    // as a picker, each card is a toggle button; picked ones are marked
+    const picked = pick?.picked.has(e.id);
+    const pickProps = pick ? {
+      role: 'button', tabIndex: 0, 'aria-pressed': picked,
+      onClick: (ev: React.MouseEvent) => { if (!(ev.target as HTMLElement).closest('.gd-tag.grp')) pick.toggle(e.id); },
+      onKeyDown: (ev: React.KeyboardEvent) => { if (ev.key === ' ' || ev.key === 'Enter') { ev.preventDefault(); pick.toggle(e.id); } },
+    } : {};
+    const mark = picked && <span className="gd-picked" aria-hidden>{pick!.label}</span>;
     if (e.c === 'item') {
       return (
-        <div key={e.id} className="gd-card" title={e.id}>
+        <div key={e.id} className={'gd-card' + (pick ? ' pickable' : '') + (picked ? ' picked' : '')} title={e.id} {...pickProps}>
           {icon}
           <span className="gd-name">{main}{alt && <span className="gd-alt"> {alt}</span>}{statLine}</span>
-          {sm}{grp}
+          {sm}{grp}{mark}
         </div>
       );
     }
     const desc = lang === 'zh' ? e.zd ?? e.d : e.d ?? e.zd;
     const sub = e.c === 'advancement' ? T.adv[e.k ?? ''] : T.kind[e.k ?? ''];
     return (
-      <div key={e.id} className="gd-card star" title={e.id}>
+      <div key={e.id} className={'gd-card star' + (pick ? ' pickable' : '') + (picked ? ' picked' : '')} title={e.id} {...pickProps}>
         {icon}
         <div className="gd-body">
           <div className="gd-name">{main}</div>
@@ -118,6 +129,7 @@ export function GuidePage() {
             {grp}
           </div>
         </div>
+        {mark}
       </div>
     );
   };
@@ -160,8 +172,8 @@ export function GuidePage() {
 
   return (
     <>
-      <h1>{T.title}</h1>
-      <p className="muted gd-sub">{T.sub}</p>
+      {!pick && <><h1>{T.title}</h1>
+      <p className="muted gd-sub">{T.sub}</p></>}
       <div className="gd-summary">
         {TIERS.map(tier => {
           const all = list.filter(e => onBoard(e) && tierOf(e) === tier);
@@ -186,7 +198,7 @@ export function GuidePage() {
       </div>
 
       {total ? sections : <p className="status">{T.empty}</p>}
-      <p className="muted small gd-footer">{T.footer}</p>
+      {!pick && <p className="muted small gd-footer">{T.footer}</p>}
     </>
   );
 }
