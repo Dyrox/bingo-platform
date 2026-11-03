@@ -18,11 +18,12 @@ object LinkCommand {
             dispatcher.register(
                 Commands.literal("bingo").then(Commands.literal("reporter").executes { ctx ->
                     val source = ctx.source
-                    source.sendSystemMessage(Component.literal("[Bingo] 正在检查… / Checking…").withStyle(ChatFormatting.GRAY))
+                    val zh = source.player.prefersChinese()
+                    source.sendSystemMessage(Component.literal(tr(zh, "[Bingo] 正在检查…", "[Bingo] Checking…")).withStyle(ChatFormatting.GRAY))
                     val started = check { s ->
-                        source.server.execute { Notices.lines(s, Notices.site, full = true).forEach { source.sendSystemMessage(it) } }
+                        source.server.execute { Notices.lines(s, Notices.site, zh, full = true).forEach { source.sendSystemMessage(it) } }
                     }
-                    if (!started) source.sendFailure(Component.literal("Bingo Reporter isn't ready yet"))
+                    if (!started) source.sendFailure(Component.literal(tr(zh, "Bingo Reporter 还没准备好", "Bingo Reporter isn't ready yet")))
                     1
                 })
             )
@@ -31,17 +32,18 @@ object LinkCommand {
                     Commands.argument("code", StringArgumentType.word()).executes { ctx ->
                         val player = ctx.source.playerOrException
                         val server = ctx.source.server
+                        val zh = player.prefersChinese()
                         val up = uploader() ?: run {
-                            ctx.source.sendFailure(Component.literal("Bingo Reporter isn't ready yet"))
+                            ctx.source.sendFailure(Component.literal(tr(zh, "Bingo Reporter 还没准备好", "Bingo Reporter isn't ready yet")))
                             return@executes 0
                         }
-                        ctx.source.sendSystemMessage(Component.literal("[Bingo] 正在绑定… / Linking…").withStyle(ChatFormatting.GRAY))
+                        ctx.source.sendSystemMessage(Component.literal(tr(zh, "[Bingo] 正在绑定…", "[Bingo] Linking…")).withStyle(ChatFormatting.GRAY))
                         up.link(StringArgumentType.getString(ctx, "code"), player.uuid.toString(), player.gameProfile.name) { result ->
                             val msg = when (result) {
-                                is LinkResult.Linked -> Component.literal("[Bingo] 已绑定到网站账号 ${result.user} / Linked to ${result.user}").withStyle(ChatFormatting.GREEN)
-                                LinkResult.BadCode -> Component.literal("[Bingo] 绑定码无效或已过期，请在网站上重新生成 / Code is wrong or expired").withStyle(ChatFormatting.RED)
-                                LinkResult.NoKey -> Component.literal("[Bingo] 这台电脑的上传密钥没填或无效（config/bingo-reporter.json）/ Upload key missing or invalid").withStyle(ChatFormatting.RED)
-                                is LinkResult.Failed -> Component.literal("[Bingo] 连接网站失败 / Couldn't reach the website: ${result.reason}").withStyle(ChatFormatting.RED)
+                                is LinkResult.Linked -> Component.literal(tr(zh, "[Bingo] 已绑定到网站账号 ${result.user}", "[Bingo] Linked to the website account ${result.user}")).withStyle(ChatFormatting.GREEN)
+                                LinkResult.BadCode -> Component.literal(tr(zh, "[Bingo] 绑定码无效或已过期，请在网站上重新生成", "[Bingo] That code is wrong or has expired; get a new one on the website")).withStyle(ChatFormatting.RED)
+                                LinkResult.NoKey -> Component.literal(tr(zh, "[Bingo] 这台电脑的上传密钥没填或无效（config/bingo-reporter.json）", "[Bingo] This computer's upload key is missing or invalid (config/bingo-reporter.json)")).withStyle(ChatFormatting.RED)
+                                is LinkResult.Failed -> Component.literal(tr(zh, "[Bingo] 连接网站失败：${result.reason}", "[Bingo] Couldn't reach the website: ${result.reason}")).withStyle(ChatFormatting.RED)
                             }
                             // back on the server thread to talk to the player
                             server.execute { player.sendSystemMessage(msg) }

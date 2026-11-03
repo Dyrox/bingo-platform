@@ -23,7 +23,7 @@ Put your upload key in `key` (create one on the website's account page). For loc
 
 ## Updates and the upload key
 
-When the game starts, and every 6 hours after that, the reporter checks the website for a newer release (`/downloads/reporter.json`) and asks `/api/key` whether its upload key still works. The host (the singleplayer/LAN owner) and ops are told in chat when they join: a newer version, with a link to download it; a missing or rejected key; and, once per session, that the key is OK. `/bingo reporter` runs the check on demand. Other players hear nothing, since only whoever runs the game can fix either.
+When the game starts, and every 6 hours after that, the reporter checks the website for a newer release (`/downloads/reporter.json`) and asks `/api/key` whether its upload key still works. The host (the singleplayer/LAN owner) and ops are told in chat when they join: a newer version, with a link to download it; a missing or rejected key; and, once per session, that the key is OK. `/bingo reporter` runs the check on demand. Other players hear nothing, since only whoever runs the game can fix either. Messages are in Chinese when the player's game language is Chinese, English otherwise (and in the server console).
 
 ## /bingo link
 

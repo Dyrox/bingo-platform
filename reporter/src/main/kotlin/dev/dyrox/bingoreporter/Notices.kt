@@ -28,7 +28,7 @@ object Notices {
         val s = status ?: return
         if (!isHost(server, player)) return
         val first = greeted.add(player.uuid)
-        for (line in lines(s, site, full = false, greet = first)) player.sendSystemMessage(line)
+        for (line in lines(s, site, player.prefersChinese(), full = false, greet = first)) player.sendSystemMessage(line)
     }
 
     /** After a check: tell the hosts already in the game (in singleplayer the host joins before it finishes). */
@@ -37,18 +37,22 @@ object Notices {
     }
 
     /** Messages for a status; `full` (the /bingo reporter command) also says what's fine. */
-    fun lines(s: ReporterStatus, site: String, full: Boolean, greet: Boolean = full): List<Component> = buildList {
+    /** Messages for a status, in Chinese or English (`zh`); `full` (the /bingo reporter command) also says what's fine. */
+    fun lines(s: ReporterStatus, site: String, zh: Boolean, full: Boolean, greet: Boolean = full): List<Component> = buildList {
         val account = "${site.trimEnd('/')}/account"
-        if (full) add(text("[Bingo] Bingo Reporter ${s.version}" + (s.latest?.let { " · 最新 / latest $it" } ?: ""), ChatFormatting.GRAY))
-        if (s.updateAvailable) add(text("[Bingo] Bingo Reporter 有新版本 ${s.latest}（当前 ${s.version}）/ Update available. ", ChatFormatting.GOLD)
-            .append(link("点这里下载 / Download", account)))
+        if (full) add(text("[Bingo] Bingo Reporter ${s.version}" + (s.latest?.let { tr(zh, " · 最新 $it", " · latest $it") } ?: ""), ChatFormatting.GRAY))
+        if (s.updateAvailable) add(text(tr(zh, "[Bingo] Bingo Reporter 有新版本 ${s.latest}（当前 ${s.version}）。", "[Bingo] Bingo Reporter ${s.latest} is out (you have ${s.version}). "), ChatFormatting.GOLD)
+            .append(link(tr(zh, "点这里下载", "Download"), account)))
         when (val k = s.key) {
-            KeyState.Missing -> add(text("[Bingo] 还没填上传密钥，这里打的对局不会上传。在网站生成密钥后填进 config/bingo-reporter.json 的 \"key\" / No upload key: rounds here won't be uploaded. ", ChatFormatting.RED)
-                .append(link("生成密钥 / Create a key", account)))
-            KeyState.Invalid -> add(text("[Bingo] 上传密钥无效（输错了或已在网站上撤销），对局会先存着，换上新密钥后再上传 / Upload key rejected; rounds wait for a new one. ", ChatFormatting.RED)
-                .append(link("重新生成 / New key", account)))
-            is KeyState.Valid -> if (greet) add(text("[Bingo] 上传密钥有效" + (k.user?.let { " · 账号 $it" } ?: "") + " / Upload key OK", ChatFormatting.GREEN))
-            is KeyState.Unknown -> if (full) add(text("[Bingo] 连不上网站，暂时没法检查密钥 / Couldn't reach the website: ${k.reason}", ChatFormatting.GRAY))
+            KeyState.Missing -> add(text(tr(zh, "[Bingo] 还没填上传密钥，这里打的对局不会上传。在网站生成密钥后填进 config/bingo-reporter.json 的 \"key\"。",
+                "[Bingo] No upload key, so rounds played here won't be uploaded. Create one on the website and put it in \"key\" in config/bingo-reporter.json. "), ChatFormatting.RED)
+                .append(link(tr(zh, "生成密钥", "Create a key"), account)))
+            KeyState.Invalid -> add(text(tr(zh, "[Bingo] 上传密钥无效（输错了或已在网站上撤销），对局会先存着，换上新密钥后再上传。",
+                "[Bingo] The website rejected the upload key (mistyped, or revoked). Rounds are kept until there's a new one. "), ChatFormatting.RED)
+                .append(link(tr(zh, "重新生成", "New key"), account)))
+            is KeyState.Valid -> if (greet) add(text(tr(zh, "[Bingo] 上传密钥有效" + (k.user?.let { " · 账号 $it" } ?: ""),
+                "[Bingo] Upload key OK" + (k.user?.let { " · account $it" } ?: "")), ChatFormatting.GREEN))
+            is KeyState.Unknown -> if (full) add(text(tr(zh, "[Bingo] 连不上网站，暂时没法检查密钥：${k.reason}", "[Bingo] Couldn't reach the website to check the key: ${k.reason}"), ChatFormatting.GRAY))
         }
     }
 
