@@ -14,7 +14,7 @@ globalThis.fetch = async path => {
 };
 
 test('timestamped and dev Bingout builds resolve to their release, even with newer data available', async () => {
-  for (const version of ['2.16.0-build.20261113163839736+mc26.3', '2.16.0-build.dev+mc26.3', '2.16.0+mc26.3']) {
+  for (const version of ['2.16.0-build.20261113163839736+mc26.3', '2.16.0-build.20261113172305089+mc26.3', '2.16.0-build.dev+mc26.3', '2.16.0+mc26.3']) {
     const result = await loadGoals(version);
     assert.equal(result.version, '2.16.0');
     assert.equal(result.goals['yet-another-minecraft-bingo:draftout/obtain_dragon_egg'].n, 'Obtain Dragon Egg');
