@@ -11,7 +11,7 @@ import { useLang } from '../i18n';
 
 const TIERS = ['S', 'A', 'B', 'C', 'D'] as const;
 type Entry = Goal & { id: string };
-type Board = 'all' | 'normal' | 'simplified';
+type Board = 'all' | 'normal' | 'simplified' | 'draftout';
 type Sort = 'default' | 'seen' | 'rate' | 'fast';
 type Filter = { c: string; tiers: string[]; board: Board; sort?: Sort };
 
@@ -73,7 +73,8 @@ export function GuidePage({ pick }: { pick?: GuidePick } = {}) {
   if (!data) return <Status>{t.loading}</Status>;
 
   const simple = f.board === 'simplified';
-  const onBoard = (e: Entry) => e.c !== 'item' || f.board === 'all' || (simple ? !!e.st : !e.sm);
+  const onBoard = (e: Entry) => f.board === 'all' || (f.board === 'draftout' ? !!e.draft
+    : !e.draft && (e.c !== 'item' || (simple ? !!e.st : !e.sm)));
   const tierOf = (e: Entry) => (simple && e.c === 'item' ? e.st : e.t);
   const needle = q.trim().toLowerCase();
   const match = (e: Entry) => onBoard(e)
@@ -183,7 +184,7 @@ export function GuidePage({ pick }: { pick?: GuidePick } = {}) {
 
       <div className="gd-bar">
         {seg(f.c, [['all', T.all], ['star', T.star], ['item', T.item], ['advancement', T.advancement], ['challenge', T.challenge]], c => setF(p => ({ ...p, c })))}
-        {seg(f.board, [['all', T.bAll, T.bTip.all], ['normal', T.bNormal, T.bTip.normal], ['simplified', T.bSimple, T.bTip.simplified]], board => setF(p => ({ ...p, board })))}
+        {seg(f.board, [['all', T.bAll, T.bTip.all], ['normal', T.bNormal, T.bTip.normal], ['simplified', T.bSimple, T.bTip.simplified], ['draftout', 'Draftout', T.bTip.draftout]], board => setF(p => ({ ...p, board })))}
         <div className="seg">
           {TIERS.map(tier => (
             <button key={tier} className="gd-tierbtn" style={{ '--tc': `var(--t${tier})` } as React.CSSProperties}

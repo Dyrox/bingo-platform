@@ -44,7 +44,7 @@ function convertOptions(raw: string): Record<string, unknown> {
   const goals = cards.map(c => c?.goal?.type === "lines" ? `lines:${c.goal.lines}` : c?.goal?.type === "items" ? `items:${c.goal.items}` : null);
   if (goals.length && goals.every(Boolean)) out.cardGoals = goals;
   const card = cards[0];
-  const modes = [card?.isLockoutMode && "lockout", card?.isInventoryMode && "inventory", card?.isHiddenItemsMode && "hidden_items", card?.isConsumeItemsMode && "consume_items"].filter(Boolean);
+  const modes = [card?.isLockoutMode && "lockout", card?.isInventoryMode && "inventory", card?.isHiddenItemsMode && "hidden_items", card?.isConsumeItemsMode && "consume_items", card?.isDraftMode && "draftout"].filter(Boolean);
   if (modes.length) out.mode = modes.join(",");
   if (card?.isHiddenItemsMode && typeof o.showHiddenTiers === "boolean") out.showHiddenTiers = o.showHiddenTiers;
   const flags: [string, string][] = [["isPvpEnabled", "pvp"], ["isElytra", "elytra"], ["isNightVision", "nightVision"], ["isKeepInventory", "keepInventory"],

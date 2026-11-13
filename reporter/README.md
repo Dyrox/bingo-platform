@@ -8,6 +8,8 @@ On whichever computer runs the game: a dedicated server, or the player who click
 
 Requires: Minecraft 26.3, Fabric Loader ≥ 0.19, YAB ≥ 2.15 (YAB brings Fabric Language Kotlin with it).
 
+Bingout 2.16.0 is also supported, including Draftout goals, the `draftout` mode tag and the 13-item card goal. It retains YAB's mod/API IDs, so the same reporter jar and configuration work with both. Older YAB releases without `isDraftMode` continue reporting their existing modes.
+
 ## Configure
 
 First launch writes `.minecraft/config/bingo-reporter.json`:

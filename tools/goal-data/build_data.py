@@ -112,6 +112,8 @@ def icon_spec(oid):
     o = objective(oid) if ':' in oid and not oid.startswith(('#', 'minecraft:')) else None
     if not o: return None, [], None, False
     img = o.get('display', {}).get('image')
+    # Draftout supplies composed pictures even for all_of/one_of goals.
+    if img: return None, [], img.split(':')[1], o.get('type') == 'inverse'
     if o.get('type') in ('all_of', 'one_of'):
         subs = []
         for x in o['objectives']:
@@ -145,7 +147,8 @@ def path_title(i): return i.split('/')[-1].replace('_', ' ').title()
 
 out = []
 # simplified mode swaps single items for 'any X' groups; its plain items are already in items.tierlist
-for cat, f in [('item', 'items'), ('advancement', 'advancements'), ('challenge', 'challenge'), ('item', 'simplified')]:
+for cat, f in [('item', 'items'), ('advancement', 'advancements'), ('challenge', 'challenge'), ('item', 'simplified'), ('challenge', 'draftout')]:
+    if not os.path.exists(B + f'tierlists/{f}.tierlist.json'): continue
     d = L(B + f'tierlists/{f}.tierlist.json')
     gid = {}
     for n, g in enumerate(d.get('groups', [])):
@@ -155,6 +158,10 @@ for cat, f in [('item', 'items'), ('advancement', 'advancements'), ('challenge',
             if f == 'simplified' and (i.startswith('minecraft:') or any(x['id'] == i for x in out)): continue
             if f == 'simplified' and any(x['c'] == 'item' and x['t'] == t and x['n'] == ben.get(f'bingo.objective.{i.split(":")[1].replace("/", ".")}') for x in out): continue
             e = {'c': cat, 't': t, 'id': i}
+            if f == 'draftout':
+                e['draft'] = 1
+                # Collection objectives still appear under the guide's item filter.
+                if (objective(i) or {}).get('type') == 'item': e['c'] = 'item'
             if f == 'simplified': e['sm'] = 1
             if cat == 'item':
                 if i.startswith('yet-another-minecraft-bingo:'):

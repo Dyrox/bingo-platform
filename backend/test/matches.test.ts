@@ -21,6 +21,21 @@ const upload = (body: unknown, k: string | null = key) => app.request("/api/matc
 });
 
 describe("POST /api/matches", () => {
+  it("accepts Bingout build versions and preserves Draftout goals and timeline", async () => {
+    const m = sample();
+    m.modVersion = "2.16.0-build.20261113163839736+mc26.3";
+    m.options = { winCondition: "cards:1", endWhen: "first_win", cardGoals: ["items:13"], mode: "lockout,draftout" };
+    const goal = "yet-another-minecraft-bingo:draftout/obtain_dragon_egg";
+    m.boards[0].cells[0].objectiveId = goal;
+    m.events = [{ t: 1000, type: "goal", team: "red", objectiveId: goal }];
+    expect((await upload(m)).status).toBe(201);
+    const got = await (await app.request(`/api/matches/${m.id}`)).json();
+    expect(got.modVersion).toBe(m.modVersion);
+    expect(got.options).toEqual(m.options);
+    expect(got.boards[0].cells.find((c: any) => c.objectiveId === goal)).toBeDefined();
+    expect(got.events).toMatchObject(m.events);
+  });
+
   it("stores a match and returns it from the detail endpoint unchanged", async () => {
     const m = sample();
     const res = await upload(m);

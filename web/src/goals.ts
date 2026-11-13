@@ -18,6 +18,7 @@ export interface Goal {
   st?: string;           // tier on the simplified board (absent: not on that board)
   sg?: string;           // exclusive group on the simplified board
   sm?: 1;                // only exists on the simplified board ("Any X")
+  draft?: 1;             // goal from Bingout's Draftout pool
 }
 export type Goals = Record<string, Goal>;
 
@@ -32,8 +33,9 @@ async function resolveVersion(modVersion: string) {
   index ??= fetch('/goals/index.json').then(r => r.json()).then(j => j.versions as string[]);
   const versions = await index;
   const base = modVersion.split('+')[0];
+  const release = base.replace(/-build\.[\w.-]+$/, '');
   // an unknown release falls back to the newest data we have; most goals carry over between releases
-  return versions.includes(base) ? base : versions[versions.length - 1];
+  return versions.includes(base) ? base : versions.includes(release) ? release : versions[versions.length - 1];
 }
 
 export function loadGoals(modVersion: string) {

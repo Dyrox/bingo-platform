@@ -34,10 +34,11 @@ class YabCell(n: Int) { val objective = Objective(Display(Stack(n))) }
 class ItemObjective(val itemCount: Int)
 class YabItemCell(n: Int) { val objective = ItemObjective(n) }
 // and OptionsService.options (private) → BingoOptions.cards → BingoCardOptions.goal
-class CardOptions(val goal: BingoGoal, val isLockoutMode: Boolean = false, val isInventoryMode: Boolean = false,
+open class CardOptions(val goal: BingoGoal, val isLockoutMode: Boolean = false, val isInventoryMode: Boolean = false,
                   val isHiddenItemsMode: Boolean = false, val isConsumeItemsMode: Boolean = false)
+class BingoutCardOptions(val isDraftMode: Boolean) : CardOptions(BingoGoal.Items(13), isLockoutMode = true)
 class InnerOptions(val cards: List<CardOptions>, val showHiddenTiers: Boolean = false)
-class YabOptions(cards: List<CardOptions>, showHiddenTiers: Boolean = false) {
+class YabOptions(cards: List<CardOptions>, showHiddenTiers: Boolean = false) : IOptionsService by Options() {
     constructor(goals: List<BingoGoal>) : this(goals.map { CardOptions(it) })
     private val options = InnerOptions(cards, showHiddenTiers)
 }
@@ -175,6 +176,21 @@ class MatchCollectorTest {
         assertEquals(listOf(listOf("lockout", "hidden_items"), listOf("inventory", "consume_items")), MatchCollector.cardModes(o))
         assertEquals(true, MatchCollector.showHiddenTiers(o))
         assertNull(MatchCollector.cardModes(Options()))
+    }
+
+    @Test
+    fun `uploads a Bingout draft round with its mode goals and winner`() {
+        val o = YabOptions(listOf(BingoutCardOptions(isDraftMode = true)))
+        val id = "yet-another-minecraft-bingo:draftout/obtain_dragon_egg"
+        val board = Card(UUID.randomUUID(), 42, mapOf((0 to 0) to Cell(id, ObjectiveTier.S, setOf("red"))))
+        val teams = listOf(YabTeam("red", listOf(dyrox), BingoTeamScore(13, 0, 0), Finished()),
+            YabTeam("blue", listOf(friend), BingoTeamScore(7, 0, 0), Playing()))
+        val m = MatchCollector.collect(snapshot(teams, Cards(mapOf("red" to board, "blue" to board)), o))!!
+        assertEquals("\"lockout,draftout\"", m.options["mode"].toString())
+        assertEquals("[\"items:13\"]", m.options["cardGoals"].toString())
+        assertEquals(listOf(true, false), m.teams.map { it.winner })
+        assertEquals(id, m.boards.single().cells.single().objectiveId)
+        assertEquals(listOf(listOf("lockout")), MatchCollector.cardModes(YabOptions(listOf(BingoutCardOptions(false)))))
     }
 
     @Test

@@ -28,7 +28,7 @@ for (const e of data) {
   goals[e.id] = Object.fromEntries(Object.entries({
     c: e.c, k: e.k, t: e.t, n: e.n, z: e.z, d: e.d, zd: e.zd, i: e.i, s: e.s, ii: e.ii, img: e.img, x: e.x,
     // tier guide: exclusive group on the normal board, and tier / group / "only here" on the simplified board
-    g: e.g, st: e.st, sg: e.sg, sm: e.sm,
+    g: e.g, st: e.st, sg: e.sg, sm: e.sm, draft: e.draft,
   }).filter(([, v]) => v !== undefined));
 }
 

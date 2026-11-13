@@ -39,7 +39,8 @@ const Team = z.object({
 
 export const MatchUpload = z.object({
   id: z.uuid(),
-  modVersion: z.string().min(1).max(32),
+  // Bingout includes a build timestamp and Minecraft version in this string.
+  modVersion: z.string().min(1).max(128),
   mcVersion: z.string().min(1).max(32),
   startedAt: z.iso.datetime({ offset: true }),
   endedAt: z.iso.datetime({ offset: true }),

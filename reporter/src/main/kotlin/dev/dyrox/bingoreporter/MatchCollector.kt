@@ -148,10 +148,12 @@ object MatchCollector {
         return (options.javaClass.getMethod("getCards").invoke(options) as List<*>).filterNotNull()
     }
 
-    /** Each card's modes, by YAB's own names: lockout, inventory, hidden_items, consume_items. */
+    /** Optional getters let older YAB releases keep working when Bingout adds a mode. */
     fun cardModes(o: Any): List<List<String>>? = try {
         yabCards(o)?.map { card ->
-            MODES.filter { (getter, _) -> card.javaClass.getMethod(getter).invoke(card) == true }.map { it.second }
+            MODES.filter { (getter, _) ->
+                card.javaClass.methods.firstOrNull { it.name == getter && it.parameterCount == 0 }?.invoke(card) == true
+            }.map { it.second }
         }
     } catch (_: ReflectiveOperationException) {
         null
@@ -164,6 +166,7 @@ object MatchCollector {
         "isInventoryMode" to "inventory",
         "isHiddenItemsMode" to "hidden_items",
         "isConsumeItemsMode" to "consume_items",
+        "isDraftMode" to "draftout",
     )
 
     /** "Show tier if hidden": hidden tiles show their tier's "?" instead of a plain one. */

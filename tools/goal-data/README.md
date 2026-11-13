@@ -29,5 +29,7 @@ The last step writes `web/public/goals/<version>/` (goals.json + one PNG per ico
 
 ## What they do
 
-- `build_data.py`: reads the tier lists (`items`, `advancements`, `challenge`, `simplified`), objective definitions and language files; resolves item tags; works out which goals the mod draws as "any of" stacks, "all of" grids or "never" goals.
-- `build_icons.py`: renders every item from the client's models and textures (blocks as isometric cubes, flat items with tints), plus the mod's own goal pictures and the forbidden frame.
+- `build_data.py`: reads the tier lists (`items`, `advancements`, `challenge`, `simplified`, and Bingout's optional `draftout`), objective definitions and language files; resolves item tags; works out which goals the mod draws as "any of" stacks, "all of" grids or "never" goals. Draftout entries carry `draft: 1` for the guide and ban picker. Explicit goal pictures take priority over composite recipes.
+- `build_icons.py`: renders every item from the client's models and textures (blocks as isometric cubes, flat items with tints), plus the mod's own goal pictures (including nested `draftout/` images) and the forbidden frame.
+
+The `2.16.0` catalog was generated from `bingout-2.16.0-build.20261113163839736+mc26.3.jar` with Minecraft 26.3 assets. It contains all 406 goals in `draftout.tierlist.json`; the internal `draftout/placeholder` is not a playable goal. Import build releases under their base version (`2.16.0`): the website maps both timestamped and `build.dev` versions to it, while preserving `2.15.1` data for older matches. Run `cd web && npm test` to check version resolution and Draftout name/icon coverage.

@@ -60,6 +60,20 @@ async function importFile(path: string, withCookie = true) {
 const profile = async (uuid: string) => (await app.request(`/api/players/${uuid}`)).json();
 
 describe("importing YAB's bingo.db", () => {
+  it("preserves Bingout's draft mode and 13-item win goal", async () => {
+    const path = yabDb(dir, [{ id: G1, players: 1, teams: [["bingo_red", true]],
+      people: [["bingo_red", DYROX, "Dyrox2333", 13]] }]);
+    const file = new DatabaseSync(path);
+    file.prepare("UPDATE Game SET bingo_options = ?").run(JSON.stringify({
+      winCondition: { type: "cards", cards: 1 },
+      cards: [{ goal: { type: "items", items: 13 }, isDraftMode: true, isLockoutMode: true }],
+    }));
+    file.close();
+    expect((await importFile(path)).status).toBe(200);
+    const m = await (await app.request(`/api/matches/${G1}`)).json();
+    expect(m.options).toMatchObject({ winCondition: "cards:1", cardGoals: ["items:13"], mode: "lockout,draftout" });
+  });
+
   it("imports a server's full history with all teams, results and settings", async () => {
     const path = yabDb(dir, [{ id: G1, players: 2, teams: [["bingo_red", true], ["bingo_blue", false]],
       people: [["bingo_red", DYROX, "Dyrox2333", 12], ["bingo_blue", FRIEND, "FriendMC", 7]] }]);

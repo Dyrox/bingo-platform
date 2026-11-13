@@ -271,8 +271,13 @@ for i in ids:
     else: out[i] = im
 extra = {}
 img_dir = BJ + '/data/yet-another-minecraft-bingo/yet-another-minecraft-bingo/images/'
-for f in sorted(os.listdir(img_dir)):
-    extra['img:' + f[:-4]] = Image.open(img_dir + f).convert('RGBA')
+for root, dirs, files in os.walk(img_dir):
+    dirs.sort()
+    for f in sorted(files):
+        if not f.endswith('.png'): continue
+        path = os.path.join(root, f)
+        key = os.path.relpath(path, img_dir).replace(os.sep, '/')[:-4]
+        extra['img:' + key] = Image.open(path).convert('RGBA')
 extra['deco:forbidden'] = Image.open(BJ + '/assets/minecraft/textures/gui/sprites/bingo/image_frame_forbidden.png').convert('RGBA')
 json.dump({k: uri(v) for k, v in {**out, **extra}.items()}, open(sys.argv[4], 'w'), separators=(',', ':'))
 print(len(out), 'icons; missing', len(miss), miss)
