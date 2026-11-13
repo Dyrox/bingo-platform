@@ -26,6 +26,8 @@ class RoundSnapshot(
     val endedAt: Instant,
     val modVersion: String,
     val mcVersion: String,
+    val modName: String? = null,
+    val reporterVersion: String? = null,
     val nameOf: (UUID) -> String?,
     val events: List<EventPayload> = emptyList(),
 )
@@ -69,6 +71,8 @@ object MatchCollector {
             id = r.gameId.toString(),
             modVersion = r.modVersion,
             mcVersion = r.mcVersion,
+            modName = r.modName,
+            reporterVersion = r.reporterVersion,
             startedAt = startedAt.toString(),
             endedAt = r.endedAt.toString(),
             durationMs = durationMs,

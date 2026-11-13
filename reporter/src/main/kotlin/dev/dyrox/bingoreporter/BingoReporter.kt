@@ -81,6 +81,9 @@ object BingoReporter : ModInitializer {
                 endedAt = Instant.now(),
                 modVersion = version(loader, "yet-another-minecraft-bingo"),
                 mcVersion = version(loader, "minecraft"),
+                // forks like Bingout keep YAB's mod id; the name tells them apart
+                modName = loader.getModContainer("yet-another-minecraft-bingo").map { it.metadata.name }.orElse(null),
+                reporterVersion = ownVersion,
                 nameOf = { playerName(api, it) },
                 events = trackers[e.id]?.events ?: emptyList(),
             ))

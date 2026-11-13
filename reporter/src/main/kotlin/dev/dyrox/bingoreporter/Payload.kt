@@ -10,6 +10,10 @@ data class MatchPayload(
     val id: String,
     val modVersion: String,
     val mcVersion: String,
+    /** the bingo mod's display name: "Yet Another Minecraft BINGO", or a fork's such as "Bingout" (same mod id) */
+    val modName: String? = null,
+    /** this reporter's own version */
+    val reporterVersion: String? = null,
     val startedAt: String,
     val endedAt: String,
     val durationMs: Long,
