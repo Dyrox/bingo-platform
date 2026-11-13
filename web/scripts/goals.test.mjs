@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { test } from 'node:test';
+import { createHash } from 'node:crypto';
 import { loadGoals, iconFile } from '../src/goals.ts';
 
 const root = new URL('../public/', import.meta.url);
@@ -39,4 +40,15 @@ test('every Draftout goal has both names and all rendered icon files', async () 
       assert.ok(key && existsSync(new URL(`./goals/${version}/icons/${iconFile(key)}`, root)), `${id}: ${key}`);
     }
   }
+});
+
+test('the sixteen dyed armor goals render sixteen distinct icons', async () => {
+  const { goals, version } = await loadGoals('2.16.0');
+  const armor = Object.entries(goals).filter(([id]) => id.includes('draftout/wear_colored_leather_armor_piece__'));
+  assert.equal(armor.length, 16);
+  const pictures = armor.map(([, goal]) => {
+    const file = new URL(`./goals/${version}/icons/${iconFile(goal.i)}`, root);
+    return createHash('sha256').update(readFileSync(file)).digest('hex');
+  });
+  assert.equal(new Set(pictures).size, 16, 'armor colors must not collapse to the default brown chestplate');
 });

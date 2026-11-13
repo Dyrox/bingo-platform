@@ -133,7 +133,11 @@ def icon_of(oid, depth=0):
     o = objective(oid)
     if not o: return None
     d = o.get('display', {})
-    if d.get('item'): return d['item']
+    if d.get('item'):
+        color = d.get('itemComponents', {}).get('minecraft:dyed_color')
+        if isinstance(color, dict): color = color.get('rgb')
+        if isinstance(color, int): return f"{d['item']}#dyed_color={color & 0xFFFFFF:06x}"
+        return d['item']
     if o.get('item'): return o['item']
     if o.get('objective'): return icon_of(o['objective'], depth + 1)
     if o.get('statType'):

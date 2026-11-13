@@ -221,6 +221,7 @@ FLAT_PARENTS = ('item/generated', 'item/handheld', 'builtin/generated', 'item/ha
 ALIAS = {'chain': 'iron_chain', 'scute': 'turtle_scute'}
 
 def icon(iid):
+    iid, _, dyed = iid.partition('#dyed_color=')
     p = iid.replace('minecraft:', '')
     p = ALIAS.get(p, p)
     it = load(C + 'items/' + p + '.json')
@@ -231,6 +232,9 @@ def icon(iid):
     fm = find_model(it['model'])
     if not fm: return None
     model, tints = fm
+    # Only the dye-controlled layer is colored; leather's buckle/overlay stays unchanged.
+    if dyed:
+        tints = [{**t, 'value': int(dyed, 16)} if t.get('type', '').removeprefix('minecraft:') == 'dye' else t for t in tints]
     tex, chain = resolve(model)
     if any(c in FLAT_PARENTS for c in chain) or ('layer0' in tex and not chain[-1].startswith('block')):
         out = None
@@ -262,6 +266,30 @@ def uri(im):
     b = io.BytesIO(); im.save(b, 'PNG', optimize=True)
     return 'data:image/png;base64,' + base64.b64encode(b.getvalue()).decode()
 
+def normalize_draftout_sheep(images):
+    """Six 2.16.0 icons fall back to wool blocks. Render them using the original sheep sprite.
+
+    Red/blue share the same pose: differing pixels identify wool, leaving the face and sword intact.
+    Red's strongest channel provides the original shading; the target dye comes from the mod data.
+    """
+    prefix = 'img:draftout/kill_colored_sheep__'
+    red, blue = images.get(prefix + 'red'), images.get(prefix + 'blue')
+    if red is None or blue is None: return
+    obj_dir = BJ + '/data/yet-another-minecraft-bingo/yet-another-minecraft-bingo/objectives/draftout/'
+    def dye(color):
+        return load(obj_dir + f'wear_colored_leather_armor_piece__{color}.json')['display']['itemComponents']['minecraft:dyed_color']
+    red_channel = (dye('red') >> 16) & 255
+    for color in ('black', 'brown', 'gray', 'light_gray', 'pink', 'white'):
+        if prefix + color not in images: continue
+        rgb = tint_rgb({'value': dye(color)})
+        pixels = [
+            tuple(min(255, round(c * r[0] / red_channel)) for c in rgb) + (r[3],) if r != b and r[3] else r
+            for r, b in zip(red.getdata(), blue.getdata())
+        ]
+        result = red.copy()
+        result.putdata(pixels)
+        images[prefix + color] = result
+
 ids = json.load(open(sys.argv[3]))
 out, miss = {}, []
 for i in ids:
@@ -278,6 +306,7 @@ for root, dirs, files in os.walk(img_dir):
         path = os.path.join(root, f)
         key = os.path.relpath(path, img_dir).replace(os.sep, '/')[:-4]
         extra['img:' + key] = Image.open(path).convert('RGBA')
+normalize_draftout_sheep(extra)
 extra['deco:forbidden'] = Image.open(BJ + '/assets/minecraft/textures/gui/sprites/bingo/image_frame_forbidden.png').convert('RGBA')
 json.dump({k: uri(v) for k, v in {**out, **extra}.items()}, open(sys.argv[4], 'w'), separators=(',', ':'))
 print(len(out), 'icons; missing', len(miss), miss)
