@@ -62,15 +62,16 @@ export function ReporterDownload() {
       <h2>{R.title}{build && build !== 'none' && <span className="muted count-badge"> v{build.version}</span>}</h2>
       <p className="muted small">{R.what}</p>
       {build === 'none' && <p className="muted small">{R.none}</p>}
+      <div className="reporter-dl">
+        {build && build !== 'none' && <a className="dl-btn" href={`/downloads/${build.file}`} download>⬇ {R.download} {build.file}</a>}
+        <a className="dl-btn" href="https://github.com/Dyrox/bingout/releases/" target="_blank" rel="noreferrer">⬇ {R.download} Bingout ↗</a>
+      </div>
       {build && build !== 'none' && (
         <>
-          <div className="reporter-dl">
-            <a className="dl-btn" href={`/downloads/${build.file}`} download>⬇ {R.download} {build.file}</a>
-            <span className="muted small">
+          <p className="muted small">
               {megabytes(build.size)} · {R.built} {formatDate(build.builtAt, lang)} ·{' '}
               <a href={`https://github.com/Dyrox/bingo-platform/commit/${build.commit}`} target="_blank" rel="noreferrer">{build.commit.slice(0, 7)}</a>
-            </span>
-          </div>
+          </p>
           <p className="muted small">{R.needs(build.minecraft, build.yab)}</p>
           <code className="sha muted">sha256 {build.sha256}</code>
           <a className="small" href="https://github.com/Dyrox/bingo-platform/releases" target="_blank" rel="noreferrer">{R.allVersions} ↗</a>
