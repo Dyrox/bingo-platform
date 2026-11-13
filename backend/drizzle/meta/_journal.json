@@ -57,6 +57,13 @@
       "when": 1793653377080,
       "tag": "0007_cell_count",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794601462924,
+      "tag": "0008_mod_name_reporter_version",
+      "breakpoints": true
     }
   ]
 }

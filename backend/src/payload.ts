@@ -42,6 +42,8 @@ export const MatchUpload = z.object({
   // Bingout includes a build timestamp and Minecraft version in this string.
   modVersion: z.string().min(1).max(128),
   mcVersion: z.string().min(1).max(32),
+  modName: z.string().min(1).max(100).nullish(),
+  reporterVersion: z.string().min(1).max(64).nullish(),
   startedAt: z.iso.datetime({ offset: true }),
   endedAt: z.iso.datetime({ offset: true }),
   durationMs: z.number().int().min(0).max(7 * 24 * 3600 * 1000),

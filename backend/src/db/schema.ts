@@ -54,6 +54,9 @@ export const matches = pgTable("matches", {
   uploadKeyId: uuid("upload_key_id").references(() => uploadKeys.id, { onDelete: "set null" }),
   modVersion: text("mod_version").notNull(),
   mcVersion: text("mc_version").notNull(),
+  // "Yet Another Minecraft BINGO" or a fork's name ("Bingout"); null for imports and reporters before 0.1.17
+  modName: text("mod_name"),
+  reporterVersion: text("reporter_version"),
   startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
   endedAt: timestamp("ended_at", { withTimezone: true }).notNull(),
   // bigint: imported rounds can have been left running for weeks (past int32's ~24.8 days)

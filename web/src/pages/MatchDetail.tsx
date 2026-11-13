@@ -201,7 +201,8 @@ export function MatchView({ id, compact = false }: { id: string; compact?: boole
           {options.map(([k, v]) => (
             <div key={k}><dt>{t.opt[k] ?? k}</dt><dd>{v}</dd></div>
           ))}
-          <div><dt>{t.mod}</dt><dd>{match.modVersion} (MC {match.mcVersion})</dd></div>
+          <div><dt>{t.mod}</dt><dd>{match.modName && <b>{match.modName} </b>}{match.modVersion} (MC {match.mcVersion})</dd></div>
+          {match.reporterVersion && <div><dt>{t.reporterVersion}</dt><dd>bingo-reporter {match.reporterVersion}</dd></div>}
           <div><dt>{t.seed}</dt><dd className="mono">{[...new Set(match.boards.map(b => b.seed))].join(', ')}</dd></div>
           <div><dt>{t.uploadedBy}</dt><dd>{match.uploader}</dd></div>
         </dl>

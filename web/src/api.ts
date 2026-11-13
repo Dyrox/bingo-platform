@@ -10,6 +10,9 @@ export interface MatchSummary {
   id: string;
   modVersion: string;
   mcVersion: string;
+  /** "Yet Another Minecraft BINGO" or a fork ("Bingout"); null when unknown */
+  modName: string | null;
+  reporterVersion: string | null;
   startedAt: string;
   endedAt: string;
   durationMs: number;

@@ -44,6 +44,7 @@ describe("POST /api/matches", () => {
 
     const got = await (await app.request(`/api/matches/${m.id}`)).json();
     expect(got.uploader).toBe("dyrox");
+    expect([got.modName, got.reporterVersion]).toEqual([null, null]);
     expect(got.options).toEqual(m.options);
     expect(got.teams).toEqual(m.teams);
     expect(got.boards[0].seed).toBe(m.boards[0].seed);
@@ -81,6 +82,15 @@ describe("POST /api/matches", () => {
     m.durationMs += 60_000;
     await upload(m);
     expect(await winners()).toEqual([["red", false], ["blue", false]]);
+  });
+
+  it("keeps which bingo mod (YAB or a fork like Bingout) and which reporter recorded the round", async () => {
+    const m = { ...sample(), modName: "Bingout", reporterVersion: "0.1.17" };
+    await upload(m);
+    const got = await (await app.request(`/api/matches/${m.id}`)).json();
+    expect([got.modName, got.reporterVersion]).toEqual(["Bingout", "0.1.17"]);
+    const list = await (await app.request("/api/matches")).json();
+    expect(list.matches[0].modName).toBe("Bingout");
   });
 
   it("won't let another user overwrite a round", async () => {

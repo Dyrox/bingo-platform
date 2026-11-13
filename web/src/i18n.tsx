@@ -8,7 +8,7 @@ const strings = {
     recent: '最近对局', loadMore: '加载更多', loading: '加载中…', none: '还没有对局。用 bingo-reporter 打一局就会出现在这里。',
     error: '加载失败', notFound: '找不到这局对局', back: '← 所有对局',
     winner: '胜利', draw: '无人获胜', items: '物品', lines: '连线', cards: '卡',
-    duration: '用时', uploadedBy: '上传者', mod: '模组版本', seed: '种子', card: '棋盘',
+    duration: '用时', uploadedBy: '上传者', mod: '模组版本', reporterVersion: 'Reporter 版本', seed: '种子', card: '棋盘',
     cardOf: (teams: string) => `${teams} 的棋盘`, completedBy: '完成：', notCompleted: '无人完成',
     got: '已完成', missed: '未完成', alsoBy: '其他完成的队伍：', cards_: '棋盘', countHere: (n: number) => `这张棋盘要 ${n} 个`, hiddenTile: '这时还没发现这个任务', lockedTile: (team: string) => `已被${team}抢走`,
     modeTip: {
@@ -138,7 +138,7 @@ const strings = {
     recent: 'Recent matches', loadMore: 'Load more', loading: 'Loading…', none: 'No matches yet. Play a round with bingo-reporter installed and it shows up here.',
     error: 'Couldn’t load', notFound: 'Match not found', back: '← All matches',
     winner: 'Winner', draw: 'No winner', items: 'items', lines: 'lines', cards: 'cards',
-    duration: 'Duration', uploadedBy: 'Uploaded by', mod: 'Mod version', seed: 'Seed', card: 'Card',
+    duration: 'Duration', uploadedBy: 'Uploaded by', mod: 'Mod version', reporterVersion: 'Reporter version', seed: 'Seed', card: 'Card',
     cardOf: (teams: string) => `${teams}’s card`, completedBy: 'Completed by ', notCompleted: 'Not completed',
     got: 'Completed', missed: 'Not completed', alsoBy: 'Also completed by ', cards_: 'Cards', countHere: (n: number) => `${n} needed on this card`, hiddenTile: 'Not discovered yet at this point', lockedTile: (team: string) => `Taken by ${team}`,
     modeTip: {

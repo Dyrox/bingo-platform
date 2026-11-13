@@ -47,7 +47,7 @@ export async function saveMatch(db: DB, m: MatchUpload, key: typeof uploadKeys.$
       }
       await tx.insert(matches).values({
         id: m.id, uploaderId: key.userId, uploadKeyId: key.id,
-        modVersion: m.modVersion, mcVersion: m.mcVersion,
+        modVersion: m.modVersion, mcVersion: m.mcVersion, modName: m.modName ?? null, reporterVersion: m.reporterVersion ?? null,
         startedAt: new Date(m.startedAt), endedAt: new Date(m.endedAt), durationMs: m.durationMs,
         options: m.options,
       });
@@ -96,7 +96,7 @@ async function teamsFor(db: DB, ids: string[]) {
 }
 
 const summary = (m: typeof matches.$inferSelect & { uploader: string }) => ({
-  id: m.id, modVersion: m.modVersion, mcVersion: m.mcVersion,
+  id: m.id, modVersion: m.modVersion, mcVersion: m.mcVersion, modName: m.modName, reporterVersion: m.reporterVersion,
   startedAt: m.startedAt.toISOString(), endedAt: m.endedAt.toISOString(), durationMs: m.durationMs,
   uploader: m.uploader,
   source: m.source,
