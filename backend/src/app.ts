@@ -14,6 +14,8 @@ import { MatchUpload } from "./payload.ts";
 import { leaderboard, listPlayers, playerProfile } from "./players.ts";
 import { goalStats } from "./stats.ts";
 import { registerAuthRoutes, type AuthConfig } from "./auth.ts";
+import { withMeta } from "./og.ts";
+import { pageMeta, registerPreviews } from "./previews.ts";
 
 type Env = { Variables: { key: NonNullable<Awaited<ReturnType<typeof findKey>>> } };
 
@@ -96,10 +98,13 @@ export function createApp(db: DB, opts: { auth?: AuthConfig; webDist?: string } 
   if (opts.webDist) {
     const root = opts.webDist;
     const indexHtml = readFileSync(join(root, "index.html"), "utf8");
+    registerPreviews(app, db, root);
+    const site = (opts.auth?.publicUrl ?? "").replace(/\/$/, "");
     const isApi = (c: Context) => c.req.path === "/api" || c.req.path.startsWith("/api/");
     const files = serveStatic({ root });
     app.use("*", async (c, next) => {
-      if (isApi(c)) return next();
+      // the home page is the app shell too, with its own preview tags (below), not the plain file
+      if (isApi(c) || c.req.path === "/" || c.req.path === "/index.html") return next();
       const found = await files(c, next);
       // not a file: serveStatic already ran next() (the app shell) and passes its return value through
       if (!(found instanceof Response)) return;
@@ -110,11 +115,12 @@ export function createApp(db: DB, opts: { auth?: AuthConfig; webDist?: string } 
         : "no-cache");
       return found;
     });
-    // client-side routes (/players/…, /matches/…) all load the app shell
+    // client-side routes (/players/…, /matches/…) all load the app shell, with that page's link-preview tags
     app.get("*", async (c, next) => {
       if (isApi(c)) return next();
       c.header("Cache-Control", "no-cache");
-      return c.html(indexHtml);
+      const meta = await pageMeta(db, c.req.path, site).catch(e => { console.error("preview tags", e); return null; });
+      return c.html(meta ? withMeta(indexHtml, meta) : indexHtml);
     });
   }
 
